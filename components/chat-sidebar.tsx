@@ -13,7 +13,7 @@ import {
   User,
   PanelRightClose,
 } from 'lucide-react'
-import { useChat, type UIMessage } from '@ai-sdk/react'
+import type { UIMessage } from '@ai-sdk/react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -244,25 +244,21 @@ export function ChatSidebar({
 
   // Manual loading state for client-side streaming
   const [isStreamingLoading, setIsStreamingLoading] = useState(false)
+  
+  // Input state
+  const [input, setInput] = useState('')
+  
+  // Messages state (managed manually since we handle streaming client-side)
+  const [messages, setMessages] = useState<UIMessage[]>([])
+  const [chatError, setChatError] = useState<Error | null>(null)
 
-  // Chat state using Vercel AI SDK (for state management only)
-  const {
-    messages,
-    input,
-    handleInputChange,
-    isLoading: useChatLoading,
-    error: chatError,
-    setMessages,
-  } = useChat({
-    api: '/api/chat', // Not used - we handle streaming client-side
-    initialMessages: [],
-    body: {
-      model: DEFAULT_CHAT_MODEL,
-    },
-  })
-
-  // Combined loading state (from useChat or manual streaming)
-  const isLoading = useChatLoading || isStreamingLoading
+  // Loading state
+  const isLoading = isStreamingLoading
+  
+  // Handle input change
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value)
+  }, [])
 
   // Custom submit handler for client-side OpenAI calls
   const handleSubmit = useCallback(
@@ -277,7 +273,7 @@ export function ChatSidebar({
       }
 
       // Clear input immediately for better UX
-      handleInputChange({ target: { value: '' } } as React.ChangeEvent<HTMLInputElement>)
+      setInput('')
 
       // Add user message immediately
       setMessages((prev) => [...prev, userMessage])
@@ -319,6 +315,7 @@ export function ChatSidebar({
         }
       } catch (error) {
         console.error('Chat error:', error)
+        setChatError(error instanceof Error ? error : new Error('Unknown error'))
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantId
@@ -338,7 +335,7 @@ export function ChatSidebar({
         setIsStreamingLoading(false)
       }
     },
-    [input, openai, messages, setMessages, handleInputChange, isLoading]
+    [input, openai, messages, setMessages, isLoading]
   )
 
   // Scroll to bottom when new messages arrive
@@ -355,14 +352,16 @@ export function ChatSidebar({
   // Clear chat history
   const handleClearChat = useCallback(() => {
     setMessages([])
-  }, [setMessages])
+    setChatError(null)
+  }, [])
 
   // Remove API key
   const handleRemoveApiKey = useCallback(() => {
     clearApiKey()
     setMessages([])
+    setChatError(null)
     setShowSettings(false)
-  }, [clearApiKey, setMessages])
+  }, [clearApiKey])
 
   // Don't render until key state is loaded
   if (!isLoaded) {

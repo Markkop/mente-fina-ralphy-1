@@ -405,5 +405,4 @@ export class GoalRepository {
   }
 }
 
-// Singleton instance using the default database
-export const goalRepository = new GoalRepository()
+// Note: goalRepository singleton is exported from index.ts to avoid circular dependency

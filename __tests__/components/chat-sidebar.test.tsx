@@ -606,4 +606,226 @@ describe('ChatSidebar', () => {
       )
     })
   })
+
+  describe('client-side streaming', () => {
+    let mockSetMessages: ReturnType<typeof vi.fn>
+    let mockHandleInputChange: ReturnType<typeof vi.fn>
+    let currentInput: string
+
+    beforeEach(() => {
+      localStorageStore['goaltree-openai-api-key'] = 'sk-test-key'
+      mockSetMessages = vi.fn()
+      mockHandleInputChange = vi.fn()
+      currentInput = ''
+
+      mockUseChat.mockImplementation(() => ({
+        messages: [],
+        input: currentInput,
+        handleInputChange: mockHandleInputChange,
+        handleSubmit: vi.fn(),
+        isLoading: false,
+        error: null,
+        setMessages: mockSetMessages,
+        append: vi.fn(),
+        reload: vi.fn(),
+        stop: vi.fn(),
+        setInput: vi.fn(),
+        data: undefined,
+        id: 'test-chat',
+        status: 'ready',
+        addToolResult: vi.fn(),
+      } as ReturnType<typeof useChat>))
+    })
+
+    it('does not submit when input is empty', () => {
+      currentInput = ''
+      mockUseChat.mockReturnValue({
+        messages: [],
+        input: '',
+        handleInputChange: mockHandleInputChange,
+        handleSubmit: vi.fn(),
+        isLoading: false,
+        error: null,
+        setMessages: mockSetMessages,
+        append: vi.fn(),
+        reload: vi.fn(),
+        stop: vi.fn(),
+        setInput: vi.fn(),
+        data: undefined,
+        id: 'test-chat',
+        status: 'ready',
+        addToolResult: vi.fn(),
+      } as ReturnType<typeof useChat>)
+
+      render(<ChatSidebar open={true} />)
+
+      // Button should be disabled when input is empty
+      expect(screen.getByTestId('chat-send-button')).toBeDisabled()
+    })
+
+    it('does not submit when only whitespace is entered', async () => {
+      mockUseChat.mockReturnValue({
+        messages: [],
+        input: '   ',
+        handleInputChange: mockHandleInputChange,
+        handleSubmit: vi.fn(),
+        isLoading: false,
+        error: null,
+        setMessages: mockSetMessages,
+        append: vi.fn(),
+        reload: vi.fn(),
+        stop: vi.fn(),
+        setInput: vi.fn(),
+        data: undefined,
+        id: 'test-chat',
+        status: 'ready',
+        addToolResult: vi.fn(),
+      } as ReturnType<typeof useChat>)
+
+      render(<ChatSidebar open={true} />)
+
+      // Button should be disabled when input is only whitespace
+      expect(screen.getByTestId('chat-send-button')).toBeDisabled()
+    })
+
+    it('calls setMessages when form is submitted with valid input', async () => {
+      const user = userEvent.setup()
+      mockUseChat.mockReturnValue({
+        messages: [],
+        input: 'Help me with my goals',
+        handleInputChange: mockHandleInputChange,
+        handleSubmit: vi.fn(),
+        isLoading: false,
+        error: null,
+        setMessages: mockSetMessages,
+        append: vi.fn(),
+        reload: vi.fn(),
+        stop: vi.fn(),
+        setInput: vi.fn(),
+        data: undefined,
+        id: 'test-chat',
+        status: 'ready',
+        addToolResult: vi.fn(),
+      } as ReturnType<typeof useChat>)
+
+      render(<ChatSidebar open={true} />)
+
+      // Submit the form
+      const sendButton = screen.getByTestId('chat-send-button')
+      expect(sendButton).not.toBeDisabled()
+      await user.click(sendButton)
+
+      // setMessages should be called to add the user message
+      expect(mockSetMessages).toHaveBeenCalled()
+    })
+
+    it('clears input after submission', async () => {
+      const user = userEvent.setup()
+      mockUseChat.mockReturnValue({
+        messages: [],
+        input: 'Help me with my goals',
+        handleInputChange: mockHandleInputChange,
+        handleSubmit: vi.fn(),
+        isLoading: false,
+        error: null,
+        setMessages: mockSetMessages,
+        append: vi.fn(),
+        reload: vi.fn(),
+        stop: vi.fn(),
+        setInput: vi.fn(),
+        data: undefined,
+        id: 'test-chat',
+        status: 'ready',
+        addToolResult: vi.fn(),
+      } as ReturnType<typeof useChat>)
+
+      render(<ChatSidebar open={true} />)
+
+      // Submit the form
+      await user.click(screen.getByTestId('chat-send-button'))
+
+      // handleInputChange should be called to clear the input
+      expect(mockHandleInputChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          target: expect.objectContaining({ value: '' }),
+        })
+      )
+    })
+
+    it('does not allow multiple submissions while loading', async () => {
+      mockUseChat.mockReturnValue({
+        messages: [],
+        input: 'Test message',
+        handleInputChange: mockHandleInputChange,
+        handleSubmit: vi.fn(),
+        isLoading: true,
+        error: null,
+        setMessages: mockSetMessages,
+        append: vi.fn(),
+        reload: vi.fn(),
+        stop: vi.fn(),
+        setInput: vi.fn(),
+        data: undefined,
+        id: 'test-chat',
+        status: 'streaming',
+        addToolResult: vi.fn(),
+      } as ReturnType<typeof useChat>)
+
+      render(<ChatSidebar open={true} />)
+
+      // Send button should be disabled when loading
+      expect(screen.getByTestId('chat-send-button')).toBeDisabled()
+    })
+
+    it('enables clear button when messages exist', () => {
+      mockUseChat.mockReturnValue({
+        messages: [{ id: '1', role: 'user', content: 'Hello' }],
+        input: '',
+        handleInputChange: mockHandleInputChange,
+        handleSubmit: vi.fn(),
+        isLoading: false,
+        error: null,
+        setMessages: mockSetMessages,
+        append: vi.fn(),
+        reload: vi.fn(),
+        stop: vi.fn(),
+        setInput: vi.fn(),
+        data: undefined,
+        id: 'test-chat',
+        status: 'ready',
+        addToolResult: vi.fn(),
+      } as ReturnType<typeof useChat>)
+
+      render(<ChatSidebar open={true} />)
+
+      expect(screen.getByTestId('chat-clear-button')).not.toBeDisabled()
+    })
+
+    it('clears messages when clear button is clicked', async () => {
+      const user = userEvent.setup()
+      mockUseChat.mockReturnValue({
+        messages: [{ id: '1', role: 'user', content: 'Hello' }],
+        input: '',
+        handleInputChange: mockHandleInputChange,
+        handleSubmit: vi.fn(),
+        isLoading: false,
+        error: null,
+        setMessages: mockSetMessages,
+        append: vi.fn(),
+        reload: vi.fn(),
+        stop: vi.fn(),
+        setInput: vi.fn(),
+        data: undefined,
+        id: 'test-chat',
+        status: 'ready',
+        addToolResult: vi.fn(),
+      } as ReturnType<typeof useChat>)
+
+      render(<ChatSidebar open={true} />)
+
+      await user.click(screen.getByTestId('chat-clear-button'))
+
+      expect(mockSetMessages).toHaveBeenCalledWith([])
+    })
+  })
 })

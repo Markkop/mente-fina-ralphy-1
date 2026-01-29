@@ -81,8 +81,24 @@ export class GoalTreeDatabase extends Dexie {
   }
 }
 
-// Singleton database instance
-export const db = new GoalTreeDatabase()
+// Singleton database instance (lazy initialization for SSR compatibility)
+let _db: GoalTreeDatabase | null = null
+
+export const db: GoalTreeDatabase = new Proxy({} as GoalTreeDatabase, {
+  get(_target, prop) {
+    if (typeof window === 'undefined') {
+      throw new Error('Database can only be accessed in the browser')
+    }
+    if (!_db) {
+      _db = new GoalTreeDatabase()
+    }
+    const value = _db[prop as keyof GoalTreeDatabase]
+    if (typeof value === 'function') {
+      return value.bind(_db)
+    }
+    return value
+  },
+})
 
 /**
  * Clears all data from the database (goals, tasks, and settings)
@@ -96,6 +112,24 @@ export async function clearAllData(): Promise<void> {
   })
 }
 
-// Export repository
-export { GoalRepository, goalRepository } from './goal-repository'
+// Export repository (types only to avoid circular dependency)
+export { GoalRepository } from './goal-repository'
 export type { CreateGoalInput, CreateTaskInput, CreateNodeInput, TreeNode } from './goal-repository'
+
+// Lazy initialization of goalRepository to avoid circular dependency
+let _goalRepository: import('./goal-repository').GoalRepository | null = null
+
+function getGoalRepository(): import('./goal-repository').GoalRepository {
+  if (typeof window === 'undefined') {
+    throw new Error('Repository can only be accessed in the browser')
+  }
+  if (!_goalRepository) {
+    const { GoalRepository } = require('./goal-repository')
+    _goalRepository = new GoalRepository()
+  }
+  return _goalRepository!
+}
+
+// Export a getter that lazily initializes the repository
+// Note: This creates the repository immediately, but only in browser context
+export const goalRepository = typeof window !== 'undefined' ? getGoalRepository() : (null as unknown as import('./goal-repository').GoalRepository)

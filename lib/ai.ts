@@ -117,14 +117,12 @@ export function createOpenAIClient(): OpenAIProvider | null {
 
   return createOpenAI({
     apiKey,
-    // Using dangerouslyAllowBrowser for local-first architecture
+    // Note: The AI SDK's createOpenAI supports browser usage by default
     // The API key is stored in user's LocalStorage and never sent to a backend
-    compatibility: "strict",
-    // Required for client-side usage in browser - safe in our case since:
+    // Safe in our case since:
     // 1. The API key is provided by the user themselves
     // 2. It's stored only in their local browser storage
     // 3. No data is sent to any backend server
-    dangerouslyAllowBrowser: true,
   })
 }
 

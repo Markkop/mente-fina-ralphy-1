@@ -1,2 +1,33 @@
 # Ralphy Progress Log
 
+- [✓] 2026-01-29 20:40 - Install ShadCN/UI and add base components (Button, Input, Sheet, Dialog, Card, ScrollArea, Tabs)
+- [✓] 2026-01-29 20:42 - Install `dexie` and `dexie-react-hooks` for local database management
+- [✓] 2026-01-29 20:47 - Install `lucide-react` for icons and `clsx`/`tailwind-merge` for styling utilities
+- [✓] 2026-01-29 20:49 - Configure `ai` (Vercel AI SDK) for client-side chat integration
+- [✓] 2026-01-29 20:51 - Initialize Dexie database instance in `src/db/index.ts`
+- [✓] 2026-01-29 20:52 - Define the `Goal` table schema (id, title, description, parentId, type, status, createdAt)
+- [✓] 2026-01-29 20:53 - Define the `Task` table schema (id, parentId, title, frequency, isCompleted, scheduledDate)
+- [✓] 2026-01-29 20:54 - Define the `Settings` table schema (workHoursStart, workHoursEnd, sleepStart, sleepEnd)
+- [✓] 2026-01-29 20:56 - Create a `seed.ts` script to populate a demo tree (e.g., the "Buy a House" example) for first-time load
+- [✓] 2026-01-29 20:59 - Create a `GoalRepository` class to handle Dexie CRUD operations (addNode, deleteNode, moveNode)
+- [✓] 2026-01-29 21:02 - Set up `useGoalStore` with Zustand to manage the in-memory tree state and sync with Dexie
+- [✓] 2026-01-29 21:05 - Create React Context or Hooks (`useGoals`, `useTasks`) to expose data to components
+- [✓] 2026-01-29 21:09 - Create `NodeItem` component (the recursive building block for the tree)
+- [✓] 2026-01-29 21:11 - Implement `GoalNode` variant (distinct visual style, progress bar)
+- [✓] 2026-01-29 21:14 - Implement `TaskNode` variant (checkbox, frequency badge)
+- [✓] 2026-01-29 21:17 - Implement `RequirementNode` variant (informational styling, non-checkable)
+- [✓] 2026-01-29 21:20 - Build the main `GoalTreeView` container with expand/collapse logic
+- [✓] 2026-01-29 21:23 - Create "Add Child" dialog to append new items to any node
+- [✓] 2026-01-29 21:29 - Build the `ChatSidebar` component (collapsible panel on the right)
+- [✓] 2026-01-29 21:32 - Create `useOpenAIKey` hook to manage the API key in LocalStorage
+- [✓] 2026-01-29 21:46 - Implement the chat interface using `useChat` from Vercel AI SDK
+- [✓] 2026-01-29 21:50 - Create a "Suggestion Card" component to display AI-proposed goal structures
+- [✓] 2026-01-29 21:54 - Implement the "Apply" logic: Parse AI JSON response -> Insert into Dexie -> Update Tree
+- [✓] 2026-01-29 21:58 - Build `WeeklyView` component (CSS Grid based 7-column layout)
+- [✓] 2026-01-29 22:04 - Implement `TimeSlot` rendering logic to visualize Work and Sleep blocks from settings
+- [✓] 2026-01-29 22:07 - Create `DraggableTask` logic (or simple "Click to Schedule" modal) to assign tasks to time slots
+- [✓] 2026-01-29 22:12 - Render scheduled tasks onto the grid
+- [✓] 2026-01-29 22:15 - Create a `Layout` wrapper that combines the Tree View (Left) and Chat Sidebar (Right)
+- [✓] 2026-01-29 22:21 - Implement the `SettingsModal` to configure Work/Sleep hours
+- [✓] 2026-01-29 22:24 - Add a "Reset/Clear Data" button in settings for debugging
+- [✓] 2026-01-29 22:28 - Verify mobile responsiveness (stack views instead of split screen on small devices)

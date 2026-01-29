@@ -273,7 +273,9 @@ export function useTasks() {
     function collectTasks(nodes: TreeNodeWithChildren[]) {
       for (const node of nodes) {
         if (node.nodeType === 'task') {
-          tasks.push(node as TaskWithMeta)
+          // Type assertion is safe here because we've checked nodeType === 'task'
+          // and the store ensures tasks have the required properties
+          tasks.push(node as unknown as TaskWithMeta)
         }
         if (node.children.length > 0) {
           collectTasks(node.children)
@@ -322,7 +324,7 @@ export function useTasks() {
     (id: number): TaskWithMeta | undefined => {
       const node = store.getNode(id, 'task')
       if (node && node.nodeType === 'task') {
-        return node as TaskWithMeta
+        return node as unknown as TaskWithMeta
       }
       return undefined
     },
@@ -333,7 +335,9 @@ export function useTasks() {
   const getTasksForParent = useCallback(
     (parentId: number): TaskWithMeta[] => {
       const children = store.getChildren(parentId)
-      return children.filter((c): c is TaskWithMeta => c.nodeType === 'task') as TaskWithMeta[]
+      return children
+        .filter((c) => c.nodeType === 'task')
+        .map((c) => c as unknown as TaskWithMeta)
     },
     [store]
   )
