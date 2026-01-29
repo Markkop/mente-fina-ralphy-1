@@ -492,38 +492,74 @@ describe('GoalNode', () => {
     })
   })
 
+  describe('add child button hover visibility', () => {
+    it('add child button container has opacity-0 class (hidden by default)', () => {
+      const goal = createMockGoal({ id: 40 })
+      render(<GoalNode node={goal} />)
+
+      const addButton = screen.getByTestId('goal-add-child-button-40')
+      const buttonContainer = addButton.parentElement
+      expect(buttonContainer).toHaveClass('opacity-0')
+    })
+
+    it('add child button container has group-hover:opacity-100 class (visible on hover)', () => {
+      const goal = createMockGoal({ id: 41 })
+      render(<GoalNode node={goal} />)
+
+      const addButton = screen.getByTestId('goal-add-child-button-41')
+      const buttonContainer = addButton.parentElement
+      expect(buttonContainer).toHaveClass('group-hover:opacity-100')
+    })
+
+    it('add child button is present in the DOM even when hidden', () => {
+      const goal = createMockGoal({ id: 42 })
+      render(<GoalNode node={goal} />)
+
+      const addButton = screen.getByTestId('goal-add-child-button-42')
+      expect(addButton).toBeInTheDocument()
+    })
+
+    it('parent row has group class for hover targeting', () => {
+      const goal = createMockGoal({ id: 43 })
+      render(<GoalNode node={goal} />)
+
+      const row = screen.getByTestId('goal-row-43')
+      expect(row).toHaveClass('group')
+    })
+  })
+
   describe('accessibility', () => {
     it('has correct aria attributes for tree item', () => {
-      const childGoal = createMockGoal({ id: 40 })
+      const childGoal = createMockGoal({ id: 51 })
       const parentGoal = createMockGoal({
-        id: 35,
+        id: 50,
         children: [childGoal],
       })
-      render(<GoalNode node={parentGoal} selectedNodeId={35} />)
+      render(<GoalNode node={parentGoal} selectedNodeId={50} />)
 
-      const row = screen.getByTestId('goal-row-35')
+      const row = screen.getByTestId('goal-row-50')
       expect(row).toHaveAttribute('role', 'treeitem')
       expect(row).toHaveAttribute('aria-expanded', 'true')
       expect(row).toHaveAttribute('aria-selected', 'true')
     })
 
     it('has correct aria label for expand button', () => {
-      const childGoal = createMockGoal({ id: 41 })
+      const childGoal = createMockGoal({ id: 53 })
       const parentGoal = createMockGoal({
-        id: 36,
+        id: 52,
         children: [childGoal],
       })
       render(<GoalNode node={parentGoal} defaultExpanded={true} />)
 
-      const expandButton = screen.getByTestId('goal-expand-button-36')
+      const expandButton = screen.getByTestId('goal-expand-button-52')
       expect(expandButton).toHaveAttribute('aria-label', 'Collapse')
     })
 
     it('has correct aria label for add child button', () => {
-      const goal = createMockGoal({ id: 37 })
+      const goal = createMockGoal({ id: 54 })
       render(<GoalNode node={goal} />)
 
-      const addButton = screen.getByTestId('goal-add-child-button-37')
+      const addButton = screen.getByTestId('goal-add-child-button-54')
       expect(addButton).toHaveAttribute('aria-label', 'Add child node')
     })
   })
