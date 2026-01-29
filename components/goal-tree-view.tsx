@@ -8,6 +8,7 @@ import {
   AlertCircle,
   TreePine,
   RefreshCw,
+  Plus,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -27,6 +28,8 @@ export interface GoalTreeViewProps {
   onAddChild?: (parentNode: TreeNodeWithChildren) => void
   /** Callback when delete is clicked on a node */
   onDelete?: (node: TreeNodeWithChildren) => void
+  /** Callback when "New Goal" button is clicked to create a root goal */
+  onNewGoal?: () => void
   /** Currently selected node id */
   selectedNodeId?: number | null
   /** Whether to show the toolbar (expand all/collapse all buttons) */
@@ -58,6 +61,7 @@ export function GoalTreeView({
   onSelectNode,
   onAddChild,
   onDelete,
+  onNewGoal,
   selectedNodeId,
   showToolbar = true,
   initialExpandState = 'default',
@@ -197,9 +201,21 @@ export function GoalTreeView({
       >
         <TreePine className="h-12 w-12 mb-4 opacity-50" />
         <p className="text-lg font-medium mb-2">No goals yet</p>
-        <p className="text-sm text-center max-w-xs">
+        <p className="text-sm text-center max-w-xs mb-4">
           Start by creating your first goal to begin planning your journey.
         </p>
+        {onNewGoal && (
+          <Button
+            variant="default"
+            size="sm"
+            onClick={onNewGoal}
+            aria-label="Create new goal"
+            data-testid="goal-tree-view-empty-new-goal"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            New Goal
+          </Button>
+        )}
       </div>
     )
   }
@@ -231,6 +247,18 @@ export function GoalTreeView({
 
           {/* Actions - compact on mobile */}
           <div className="flex items-center gap-1 sm:gap-2">
+            {onNewGoal && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={onNewGoal}
+                aria-label="Create new goal"
+                data-testid="goal-tree-view-new-goal"
+              >
+                <Plus className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline">New Goal</span>
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"

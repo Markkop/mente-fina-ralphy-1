@@ -195,6 +195,49 @@ describe('GoalTreeView', () => {
         screen.getByText('Start by creating your first goal to begin planning your journey.')
       ).toBeInTheDocument()
     })
+
+    it('shows New Goal button in empty state when onNewGoal is provided', () => {
+      mockHookState = {
+        rootGoals: [],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<GoalTreeView onNewGoal={() => {}} />)
+
+      expect(screen.getByTestId('goal-tree-view-empty-new-goal')).toBeInTheDocument()
+      expect(screen.getByText('New Goal')).toBeInTheDocument()
+    })
+
+    it('does not show New Goal button in empty state when onNewGoal is not provided', () => {
+      mockHookState = {
+        rootGoals: [],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<GoalTreeView />)
+
+      expect(screen.queryByTestId('goal-tree-view-empty-new-goal')).not.toBeInTheDocument()
+    })
+
+    it('calls onNewGoal when New Goal button is clicked in empty state', () => {
+      const onNewGoal = vi.fn()
+      mockHookState = {
+        rootGoals: [],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<GoalTreeView onNewGoal={onNewGoal} />)
+
+      fireEvent.click(screen.getByTestId('goal-tree-view-empty-new-goal'))
+
+      expect(onNewGoal).toHaveBeenCalledTimes(1)
+    })
   })
 
   describe('rendering goals', () => {
@@ -279,6 +322,69 @@ describe('GoalTreeView', () => {
       render(<GoalTreeView />)
 
       expect(screen.getByTestId('goal-tree-view-toolbar')).toBeInTheDocument()
+    })
+
+    it('shows New Goal button when onNewGoal is provided', () => {
+      const goal = createMockGoal({ id: 1 })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<GoalTreeView onNewGoal={() => {}} />)
+
+      expect(screen.getByTestId('goal-tree-view-new-goal')).toBeInTheDocument()
+      expect(screen.getByText('New Goal')).toBeInTheDocument()
+    })
+
+    it('does not show New Goal button when onNewGoal is not provided', () => {
+      const goal = createMockGoal({ id: 1 })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<GoalTreeView />)
+
+      expect(screen.queryByTestId('goal-tree-view-new-goal')).not.toBeInTheDocument()
+    })
+
+    it('calls onNewGoal when New Goal button is clicked', () => {
+      const onNewGoal = vi.fn()
+      const goal = createMockGoal({ id: 1 })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<GoalTreeView onNewGoal={onNewGoal} />)
+
+      fireEvent.click(screen.getByTestId('goal-tree-view-new-goal'))
+
+      expect(onNewGoal).toHaveBeenCalledTimes(1)
+    })
+
+    it('New Goal button has correct aria-label', () => {
+      const goal = createMockGoal({ id: 1 })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<GoalTreeView onNewGoal={() => {}} />)
+
+      expect(screen.getByTestId('goal-tree-view-new-goal')).toHaveAttribute(
+        'aria-label',
+        'Create new goal'
+      )
     })
 
     it('hides toolbar when showToolbar is false', () => {
@@ -722,6 +828,23 @@ describe('GoalTreeView', () => {
 
       const collapseButton = screen.getByTestId('goal-tree-view-collapse-all')
       const textSpan = collapseButton.querySelector('span')
+      expect(textSpan).toHaveClass('hidden')
+      expect(textSpan).toHaveClass('sm:inline')
+    })
+
+    it('New Goal button hides text on mobile', () => {
+      const goal = createMockGoal({ id: 1 })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<GoalTreeView onNewGoal={() => {}} />)
+
+      const newGoalButton = screen.getByTestId('goal-tree-view-new-goal')
+      const textSpan = newGoalButton.querySelector('span')
       expect(textSpan).toHaveClass('hidden')
       expect(textSpan).toHaveClass('sm:inline')
     })
