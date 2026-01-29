@@ -674,4 +674,56 @@ describe('GoalTreeView', () => {
       )
     })
   })
+
+  describe('mobile responsiveness', () => {
+    it('toolbar has responsive flex direction classes', () => {
+      const goal = createMockGoal({ id: 1 })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<GoalTreeView />)
+
+      const toolbar = screen.getByTestId('goal-tree-view-toolbar')
+      expect(toolbar).toHaveClass('flex-col')
+      expect(toolbar).toHaveClass('sm:flex-row')
+    })
+
+    it('expand all button hides text on mobile', () => {
+      const goal = createMockGoal({ id: 1 })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<GoalTreeView />)
+
+      const expandButton = screen.getByTestId('goal-tree-view-expand-all')
+      const textSpan = expandButton.querySelector('span')
+      expect(textSpan).toHaveClass('hidden')
+      expect(textSpan).toHaveClass('sm:inline')
+    })
+
+    it('collapse all button hides text on mobile', () => {
+      const goal = createMockGoal({ id: 1 })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<GoalTreeView />)
+
+      const collapseButton = screen.getByTestId('goal-tree-view-collapse-all')
+      const textSpan = collapseButton.querySelector('span')
+      expect(textSpan).toHaveClass('hidden')
+      expect(textSpan).toHaveClass('sm:inline')
+    })
+  })
 })

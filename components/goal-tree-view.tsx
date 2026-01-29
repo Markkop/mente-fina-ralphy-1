@@ -211,10 +211,10 @@ export function GoalTreeView({
       role="tree"
       aria-label="Goal tree"
     >
-      {/* Toolbar */}
+      {/* Toolbar - responsive stacking on mobile */}
       {showToolbar && (
         <div
-          className="flex items-center justify-between mb-4 pb-3 border-b"
+          className="flex flex-col gap-3 mb-4 pb-3 border-b sm:flex-row sm:items-center sm:justify-between"
           data-testid="goal-tree-view-toolbar"
         >
           {/* Stats */}
@@ -229,8 +229,8 @@ export function GoalTreeView({
             </span>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-2">
+          {/* Actions - compact on mobile */}
+          <div className="flex items-center gap-1 sm:gap-2">
             <Button
               variant="ghost"
               size="sm"
@@ -238,8 +238,8 @@ export function GoalTreeView({
               aria-label="Expand all nodes"
               data-testid="goal-tree-view-expand-all"
             >
-              <ChevronDown className="h-4 w-4 mr-1" />
-              Expand all
+              <ChevronDown className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Expand all</span>
             </Button>
             <Button
               variant="ghost"
@@ -248,8 +248,8 @@ export function GoalTreeView({
               aria-label="Collapse all nodes"
               data-testid="goal-tree-view-collapse-all"
             >
-              <ChevronUp className="h-4 w-4 mr-1" />
-              Collapse all
+              <ChevronUp className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Collapse all</span>
             </Button>
             <Button
               variant="ghost"

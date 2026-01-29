@@ -312,11 +312,12 @@ export function WeeklyView({
       role="grid"
       aria-label="Weekly task view"
     >
-      {/* Header with navigation */}
+      {/* Header with navigation - responsive stacking on mobile */}
       <div
-        className="flex items-center justify-between mb-4 pb-3 border-b"
+        className="flex flex-col gap-3 mb-4 pb-3 border-b sm:flex-row sm:items-center sm:justify-between"
         data-testid="weekly-view-header"
       >
+        {/* Navigation controls */}
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -348,12 +349,13 @@ export function WeeklyView({
           </Button>
         </div>
 
-        <div className="flex items-center gap-4">
+        {/* Week title and legend - stacks below nav on mobile */}
+        <div className="flex items-center justify-between gap-4 sm:justify-end">
           {showTimeSlots && !settingsLoading && (
-            <TimeSlotLegend data-testid="weekly-view-legend" />
+            <TimeSlotLegend data-testid="weekly-view-legend" className="hidden sm:flex" />
           )}
           <h2
-            className="text-lg font-semibold text-foreground"
+            className="text-base font-semibold text-foreground sm:text-lg"
             data-testid="weekly-view-title"
           >
             {formatWeekRange(currentWeekStart)}
@@ -361,12 +363,16 @@ export function WeeklyView({
         </div>
       </div>
 
-      {/* Weekly Grid */}
+      {/* Weekly Grid - horizontal scroll on mobile for 7-column layout */}
       <div
-        className="grid grid-cols-7 gap-2"
-        data-testid="weekly-view-grid"
-        role="row"
+        className="overflow-x-auto -mx-2 px-2 sm:overflow-x-visible sm:mx-0 sm:px-0"
+        data-testid="weekly-view-scroll-container"
       >
+        <div
+          className="grid grid-cols-7 gap-2 min-w-[700px] sm:min-w-0"
+          data-testid="weekly-view-grid"
+          role="row"
+        >
         {weekDates.map((date, index) => {
           const dayTasks = tasksByDay.get(index) || []
           const isTodayDate = isToday(date)
@@ -375,7 +381,7 @@ export function WeeklyView({
             <div
               key={date.toISOString()}
               className={cn(
-                'flex flex-col min-h-[200px] rounded-lg border p-2',
+                'flex flex-col min-h-[150px] rounded-lg border p-2 sm:min-h-[200px]',
                 isTodayDate
                   ? 'border-primary bg-primary/5'
                   : 'border-border bg-card'
@@ -467,6 +473,7 @@ export function WeeklyView({
             </div>
           )
         })}
+        </div>
       </div>
     </div>
   )

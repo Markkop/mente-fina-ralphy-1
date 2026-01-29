@@ -374,4 +374,15 @@ describe('AppLayout', () => {
       expect(header.tagName).toBe('HEADER')
     })
   })
+
+  describe('mobile responsiveness', () => {
+    it('applies responsive padding to main content area', () => {
+      render(<AppLayout />)
+
+      const main = screen.getByTestId('app-layout-main')
+      const scrollContent = main.querySelector('.p-4')
+      expect(scrollContent).toBeInTheDocument()
+      expect(scrollContent).toHaveClass('sm:p-6')
+    })
+  })
 })

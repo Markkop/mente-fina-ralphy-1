@@ -867,6 +867,47 @@ describe('WeeklyView', () => {
     })
   })
 
+  describe('mobile responsiveness', () => {
+    it('renders scroll container for horizontal scrolling on mobile', () => {
+      render(<WeeklyView />)
+
+      const scrollContainer = screen.getByTestId('weekly-view-scroll-container')
+      expect(scrollContainer).toBeInTheDocument()
+      expect(scrollContainer).toHaveClass('overflow-x-auto')
+    })
+
+    it('applies min-width to grid for mobile scrolling', () => {
+      render(<WeeklyView />)
+
+      const grid = screen.getByTestId('weekly-view-grid')
+      expect(grid).toHaveClass('min-w-[700px]')
+    })
+
+    it('header has responsive flex direction classes', () => {
+      render(<WeeklyView />)
+
+      const header = screen.getByTestId('weekly-view-header')
+      expect(header).toHaveClass('flex-col')
+      expect(header).toHaveClass('sm:flex-row')
+    })
+
+    it('day columns have responsive minimum height', () => {
+      render(<WeeklyView />)
+
+      const dayColumn = screen.getByTestId('weekly-view-day-0')
+      expect(dayColumn).toHaveClass('min-h-[150px]')
+      expect(dayColumn).toHaveClass('sm:min-h-[200px]')
+    })
+
+    it('hides time slot legend on mobile', () => {
+      render(<WeeklyView />)
+
+      const legend = screen.getByTestId('time-slot-legend')
+      expect(legend).toHaveClass('hidden')
+      expect(legend).toHaveClass('sm:flex')
+    })
+  })
+
   describe('custom className', () => {
     it('applies custom className to container', () => {
       render(<WeeklyView className="custom-class" />)
