@@ -12,6 +12,7 @@ import {
   MoreHorizontal,
   Repeat,
   Calendar,
+  Trash2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -238,6 +239,14 @@ export function NodeItem({
     [node, onAddChild]
   )
 
+  const handleDelete = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation()
+      onDelete?.(node)
+    },
+    [node, onDelete]
+  )
+
   const TaskFrequencyIcon = frequency ? FREQUENCY_ICONS[frequency] : null
 
   return (
@@ -358,6 +367,16 @@ export function NodeItem({
               <MoreHorizontal className="h-3 w-3" />
             </Button>
           )}
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            onClick={handleDelete}
+            aria-label="Delete node"
+            data-testid={`delete-button-${node.id}`}
+            className="hover:bg-red-100 dark:hover:bg-red-900/50 hover:text-red-600 dark:hover:text-red-400"
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
         </div>
       </div>
 

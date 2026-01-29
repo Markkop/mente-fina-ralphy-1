@@ -297,6 +297,38 @@ describe('NodeItem', () => {
 
       expect(screen.queryByTestId('add-child-button-30')).not.toBeInTheDocument()
     })
+
+    it('calls onDelete when delete button is clicked', () => {
+      const onDelete = vi.fn()
+      const node = createMockNode({ id: 59, title: 'Node to Delete' })
+      render(<NodeItem node={node} onDelete={onDelete} />)
+
+      fireEvent.click(screen.getByTestId('delete-button-59'))
+
+      expect(onDelete).toHaveBeenCalledWith(node)
+    })
+
+    it('calls onDelete when delete button is clicked on task node', () => {
+      const onDelete = vi.fn()
+      const task = createMockTask({ id: 60, title: 'Task to Delete' })
+      render(<NodeItem node={task} onDelete={onDelete} />)
+
+      fireEvent.click(screen.getByTestId('delete-button-60'))
+
+      expect(onDelete).toHaveBeenCalledWith(task)
+    })
+
+    it('delete button stops event propagation', () => {
+      const onDelete = vi.fn()
+      const onSelect = vi.fn()
+      const node = createMockNode({ id: 61, title: 'Node' })
+      render(<NodeItem node={node} onDelete={onDelete} onSelect={onSelect} />)
+
+      fireEvent.click(screen.getByTestId('delete-button-61'))
+
+      expect(onDelete).toHaveBeenCalled()
+      expect(onSelect).not.toHaveBeenCalled()
+    })
   })
 
   describe('Add Child button hover visibility', () => {
@@ -363,6 +395,46 @@ describe('NodeItem', () => {
 
       const addButton = screen.getByTestId('add-child-button-58')
       expect(addButton).toHaveAttribute('aria-label', 'Add child node')
+    })
+  })
+
+  describe('Delete button hover visibility', () => {
+    it('renders Delete button with hover visibility classes', () => {
+      const node = createMockNode({ id: 62, title: 'Goal Node' })
+      render(<NodeItem node={node} onDelete={vi.fn()} />)
+
+      const deleteButton = screen.getByTestId('delete-button-62')
+      expect(deleteButton).toBeInTheDocument()
+
+      // The button should be inside a container with opacity-0 and group-hover:opacity-100
+      const actionsContainer = deleteButton.parentElement
+      expect(actionsContainer).toHaveClass('opacity-0')
+      expect(actionsContainer).toHaveClass('group-hover:opacity-100')
+    })
+
+    it('renders Delete button for task nodes', () => {
+      const task = createMockTask({ id: 63, title: 'Task' })
+      render(<NodeItem node={task} onDelete={vi.fn()} />)
+
+      const deleteButton = screen.getByTestId('delete-button-63')
+      expect(deleteButton).toBeInTheDocument()
+    })
+
+    it('Delete button has correct aria-label for accessibility', () => {
+      const node = createMockNode({ id: 64, title: 'Node with Delete' })
+      render(<NodeItem node={node} onDelete={vi.fn()} />)
+
+      const deleteButton = screen.getByTestId('delete-button-64')
+      expect(deleteButton).toHaveAttribute('aria-label', 'Delete node')
+    })
+
+    it('Delete button has hover styling for red color', () => {
+      const node = createMockNode({ id: 65, title: 'Node with Delete' })
+      render(<NodeItem node={node} onDelete={vi.fn()} />)
+
+      const deleteButton = screen.getByTestId('delete-button-65')
+      expect(deleteButton).toHaveClass('hover:bg-red-100')
+      expect(deleteButton).toHaveClass('hover:text-red-600')
     })
   })
 

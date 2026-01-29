@@ -380,4 +380,78 @@ describe('TaskNode', () => {
       expect(row).not.toHaveClass('opacity-75')
     })
   })
+
+  describe('delete button', () => {
+    it('renders delete button', () => {
+      const task = createMockTask({ id: 90 })
+      render(<TaskNode node={task} />)
+
+      expect(screen.getByTestId('task-delete-button-90')).toBeInTheDocument()
+    })
+
+    it('calls onDelete when delete button is clicked', () => {
+      const onDelete = vi.fn()
+      const task = createMockTask({ id: 91, title: 'Task to Delete' })
+      render(<TaskNode node={task} onDelete={onDelete} />)
+
+      fireEvent.click(screen.getByTestId('task-delete-button-91'))
+
+      expect(onDelete).toHaveBeenCalledWith(task)
+    })
+
+    it('delete button stops event propagation', () => {
+      const onDelete = vi.fn()
+      const onSelect = vi.fn()
+      const task = createMockTask({ id: 92 })
+      render(<TaskNode node={task} onDelete={onDelete} onSelect={onSelect} />)
+
+      fireEvent.click(screen.getByTestId('task-delete-button-92'))
+
+      expect(onDelete).toHaveBeenCalled()
+      expect(onSelect).not.toHaveBeenCalled()
+    })
+
+    it('delete button container has opacity-0 class (hidden by default)', () => {
+      const task = createMockTask({ id: 93 })
+      render(<TaskNode node={task} />)
+
+      const deleteButton = screen.getByTestId('task-delete-button-93')
+      const buttonContainer = deleteButton.parentElement
+      expect(buttonContainer).toHaveClass('opacity-0')
+    })
+
+    it('delete button container has group-hover:opacity-100 class (visible on hover)', () => {
+      const task = createMockTask({ id: 94 })
+      render(<TaskNode node={task} />)
+
+      const deleteButton = screen.getByTestId('task-delete-button-94')
+      const buttonContainer = deleteButton.parentElement
+      expect(buttonContainer).toHaveClass('group-hover:opacity-100')
+    })
+
+    it('delete button has correct aria-label for accessibility', () => {
+      const task = createMockTask({ id: 95 })
+      render(<TaskNode node={task} />)
+
+      const deleteButton = screen.getByTestId('task-delete-button-95')
+      expect(deleteButton).toHaveAttribute('aria-label', 'Delete task')
+    })
+
+    it('delete button has hover styling for red color', () => {
+      const task = createMockTask({ id: 96 })
+      render(<TaskNode node={task} />)
+
+      const deleteButton = screen.getByTestId('task-delete-button-96')
+      expect(deleteButton).toHaveClass('hover:bg-red-100')
+      expect(deleteButton).toHaveClass('hover:text-red-600')
+    })
+
+    it('task row has group class for hover targeting', () => {
+      const task = createMockTask({ id: 97 })
+      render(<TaskNode node={task} />)
+
+      const row = screen.getByTestId('task-row-97')
+      expect(row).toHaveClass('group')
+    })
+  })
 })

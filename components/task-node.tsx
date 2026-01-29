@@ -7,7 +7,9 @@ import {
   Repeat,
   Calendar,
   Clock,
+  Trash2,
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { TreeNodeWithChildren } from '@/lib/goal-store'
 import type { TaskFrequency } from '@/src/db'
@@ -24,6 +26,8 @@ export interface TaskNodeProps {
   onToggleTask?: (id: number, isCompleted: boolean) => void
   /** Callback when the task is selected */
   onSelect?: (node: TreeNodeWithChildren) => void
+  /** Callback when delete is clicked */
+  onDelete?: (node: TreeNodeWithChildren) => void
   /** Currently selected node id */
   selectedNodeId?: number | null
 }
@@ -94,6 +98,7 @@ export function TaskNode({
   depth = 0,
   onToggleTask,
   onSelect,
+  onDelete,
   selectedNodeId,
 }: TaskNodeProps) {
   const isSelected = selectedNodeId === node.id
@@ -121,6 +126,14 @@ export function TaskNode({
       }
     },
     [node.id, isCompleted, onToggleTask]
+  )
+
+  const handleDelete = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation()
+      onDelete?.(node)
+    },
+    [node, onDelete]
   )
 
   return (
@@ -221,6 +234,20 @@ export function TaskNode({
               {new Date(scheduledDate).toLocaleDateString()}
             </span>
           )}
+        </div>
+
+        {/* Delete button (visible on hover) */}
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            onClick={handleDelete}
+            aria-label="Delete task"
+            data-testid={`task-delete-button-${node.id}`}
+            className="hover:bg-red-100 dark:hover:bg-red-900/50 hover:text-red-600 dark:hover:text-red-400"
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
         </div>
       </div>
     </div>

@@ -1,8 +1,9 @@
 'use client'
 
 import { useCallback } from 'react'
-import { Info } from 'lucide-react'
+import { Info, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import type { TreeNodeWithChildren } from '@/lib/goal-store'
 
 /**
@@ -15,6 +16,8 @@ export interface RequirementNodeProps {
   depth?: number
   /** Callback when the requirement is selected */
   onSelect?: (node: TreeNodeWithChildren) => void
+  /** Callback when delete is clicked */
+  onDelete?: (node: TreeNodeWithChildren) => void
   /** Currently selected node id */
   selectedNodeId?: number | null
 }
@@ -31,6 +34,7 @@ export function RequirementNode({
   node,
   depth = 0,
   onSelect,
+  onDelete,
   selectedNodeId,
 }: RequirementNodeProps) {
   const isSelected = selectedNodeId === node.id
@@ -38,6 +42,14 @@ export function RequirementNode({
   const handleSelect = useCallback(() => {
     onSelect?.(node)
   }, [node, onSelect])
+
+  const handleDelete = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation()
+      onDelete?.(node)
+    },
+    [node, onDelete]
+  )
 
   return (
     <div className="w-full" data-testid={`requirement-node-${node.id}`}>
@@ -101,6 +113,20 @@ export function RequirementNode({
           <Info className="h-3 w-3 text-amber-500" />
           Info
         </span>
+
+        {/* Delete button (visible on hover) */}
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            onClick={handleDelete}
+            aria-label="Delete requirement"
+            data-testid={`requirement-delete-button-${node.id}`}
+            className="hover:bg-red-100 dark:hover:bg-red-900/50 hover:text-red-600 dark:hover:text-red-400"
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </div>
       </div>
     </div>
   )

@@ -366,6 +366,28 @@ describe('GoalNode', () => {
       // Task should be rendered via NodeItem
       expect(screen.getByTestId('node-item-31')).toBeInTheDocument()
     })
+
+    it('calls onDelete when delete button is clicked', () => {
+      const onDelete = vi.fn()
+      const goal = createMockGoal({ id: 55, title: 'Goal to Delete' })
+      render(<GoalNode node={goal} onDelete={onDelete} />)
+
+      fireEvent.click(screen.getByTestId('goal-delete-button-55'))
+
+      expect(onDelete).toHaveBeenCalledWith(goal)
+    })
+
+    it('delete button stops event propagation', () => {
+      const onDelete = vi.fn()
+      const onSelect = vi.fn()
+      const goal = createMockGoal({ id: 56, title: 'Goal' })
+      render(<GoalNode node={goal} onDelete={onDelete} onSelect={onSelect} />)
+
+      fireEvent.click(screen.getByTestId('goal-delete-button-56'))
+
+      expect(onDelete).toHaveBeenCalled()
+      expect(onSelect).not.toHaveBeenCalled()
+    })
   })
 
   describe('selection', () => {
@@ -525,6 +547,41 @@ describe('GoalNode', () => {
 
       const row = screen.getByTestId('goal-row-43')
       expect(row).toHaveClass('group')
+    })
+
+    it('delete button container has opacity-0 class (hidden by default)', () => {
+      const goal = createMockGoal({ id: 57 })
+      render(<GoalNode node={goal} />)
+
+      const deleteButton = screen.getByTestId('goal-delete-button-57')
+      const buttonContainer = deleteButton.parentElement
+      expect(buttonContainer).toHaveClass('opacity-0')
+    })
+
+    it('delete button container has group-hover:opacity-100 class (visible on hover)', () => {
+      const goal = createMockGoal({ id: 58 })
+      render(<GoalNode node={goal} />)
+
+      const deleteButton = screen.getByTestId('goal-delete-button-58')
+      const buttonContainer = deleteButton.parentElement
+      expect(buttonContainer).toHaveClass('group-hover:opacity-100')
+    })
+
+    it('delete button has correct aria-label for accessibility', () => {
+      const goal = createMockGoal({ id: 59 })
+      render(<GoalNode node={goal} />)
+
+      const deleteButton = screen.getByTestId('goal-delete-button-59')
+      expect(deleteButton).toHaveAttribute('aria-label', 'Delete goal')
+    })
+
+    it('delete button has hover styling for red color', () => {
+      const goal = createMockGoal({ id: 60 })
+      render(<GoalNode node={goal} />)
+
+      const deleteButton = screen.getByTestId('goal-delete-button-60')
+      expect(deleteButton).toHaveClass('hover:bg-red-100')
+      expect(deleteButton).toHaveClass('hover:text-red-600')
     })
   })
 

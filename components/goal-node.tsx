@@ -7,6 +7,7 @@ import {
   Target,
   MoreHorizontal,
   Sparkles,
+  Trash2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -154,6 +155,14 @@ export function GoalNode({
     [node, onAddChild]
   )
 
+  const handleDelete = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation()
+      onDelete?.(node)
+    },
+    [node, onDelete]
+  )
+
   return (
     <div className="w-full" data-testid={`goal-node-${node.id}`}>
       {/* Goal Card */}
@@ -267,6 +276,16 @@ export function GoalNode({
             >
               <MoreHorizontal className="h-4 w-4" />
             </Button>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={handleDelete}
+              aria-label="Delete goal"
+              data-testid={`goal-delete-button-${node.id}`}
+              className="hover:bg-red-100 dark:hover:bg-red-900/50 hover:text-red-600 dark:hover:text-red-400"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
@@ -347,6 +366,7 @@ export function GoalNode({
                   node={child}
                   depth={depth + 1}
                   onSelect={onSelect}
+                  onDelete={onDelete}
                   selectedNodeId={selectedNodeId}
                 />
               )

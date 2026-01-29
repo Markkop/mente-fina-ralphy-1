@@ -231,4 +231,78 @@ describe('RequirementNode', () => {
       expect(row).toHaveClass('cursor-pointer')
     })
   })
+
+  describe('delete button', () => {
+    it('renders delete button', () => {
+      const requirement = createMockRequirement({ id: 70 })
+      render(<RequirementNode node={requirement} />)
+
+      expect(screen.getByTestId('requirement-delete-button-70')).toBeInTheDocument()
+    })
+
+    it('calls onDelete when delete button is clicked', () => {
+      const onDelete = vi.fn()
+      const requirement = createMockRequirement({ id: 71, title: 'Requirement to Delete' })
+      render(<RequirementNode node={requirement} onDelete={onDelete} />)
+
+      fireEvent.click(screen.getByTestId('requirement-delete-button-71'))
+
+      expect(onDelete).toHaveBeenCalledWith(requirement)
+    })
+
+    it('delete button stops event propagation', () => {
+      const onDelete = vi.fn()
+      const onSelect = vi.fn()
+      const requirement = createMockRequirement({ id: 72 })
+      render(<RequirementNode node={requirement} onDelete={onDelete} onSelect={onSelect} />)
+
+      fireEvent.click(screen.getByTestId('requirement-delete-button-72'))
+
+      expect(onDelete).toHaveBeenCalled()
+      expect(onSelect).not.toHaveBeenCalled()
+    })
+
+    it('delete button container has opacity-0 class (hidden by default)', () => {
+      const requirement = createMockRequirement({ id: 73 })
+      render(<RequirementNode node={requirement} />)
+
+      const deleteButton = screen.getByTestId('requirement-delete-button-73')
+      const buttonContainer = deleteButton.parentElement
+      expect(buttonContainer).toHaveClass('opacity-0')
+    })
+
+    it('delete button container has group-hover:opacity-100 class (visible on hover)', () => {
+      const requirement = createMockRequirement({ id: 74 })
+      render(<RequirementNode node={requirement} />)
+
+      const deleteButton = screen.getByTestId('requirement-delete-button-74')
+      const buttonContainer = deleteButton.parentElement
+      expect(buttonContainer).toHaveClass('group-hover:opacity-100')
+    })
+
+    it('delete button has correct aria-label for accessibility', () => {
+      const requirement = createMockRequirement({ id: 75 })
+      render(<RequirementNode node={requirement} />)
+
+      const deleteButton = screen.getByTestId('requirement-delete-button-75')
+      expect(deleteButton).toHaveAttribute('aria-label', 'Delete requirement')
+    })
+
+    it('delete button has hover styling for red color', () => {
+      const requirement = createMockRequirement({ id: 76 })
+      render(<RequirementNode node={requirement} />)
+
+      const deleteButton = screen.getByTestId('requirement-delete-button-76')
+      expect(deleteButton).toHaveClass('hover:bg-red-100')
+      expect(deleteButton).toHaveClass('hover:text-red-600')
+    })
+
+    it('requirement row has group class for hover targeting', () => {
+      const requirement = createMockRequirement({ id: 77 })
+      render(<RequirementNode node={requirement} />)
+
+      const row = screen.getByTestId('requirement-row-77')
+      expect(row).toHaveClass('group')
+    })
+  })
 })
