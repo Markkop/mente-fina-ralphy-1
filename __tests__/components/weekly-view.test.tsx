@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { WeeklyView } from '@/components/weekly-view'
+import { DEFAULT_SETTINGS } from '@/lib/hooks'
 
 // Mock the hooks module
 vi.mock('@/lib/hooks', () => ({
@@ -9,10 +10,30 @@ vi.mock('@/lib/hooks', () => ({
     allTasks: [],
     toggleTaskCompletion: vi.fn(),
   })),
+  useSettings: vi.fn(() => ({
+    settings: {
+      workHoursStart: '09:00',
+      workHoursEnd: '18:00',
+      sleepStart: '23:00',
+      sleepEnd: '07:00',
+    },
+    isLoading: false,
+    error: null,
+    updateSettings: vi.fn(),
+    resetSettings: vi.fn(),
+    refresh: vi.fn(),
+  })),
+  DEFAULT_SETTINGS: {
+    workHoursStart: '09:00',
+    workHoursEnd: '18:00',
+    sleepStart: '23:00',
+    sleepEnd: '07:00',
+  },
 }))
 
-import { useTasks } from '@/lib/hooks'
+import { useTasks, useSettings } from '@/lib/hooks'
 const mockUseTasks = vi.mocked(useTasks)
+const mockUseSettings = vi.mocked(useSettings)
 
 // Helper to create a mock task
 function createMockTask(overrides: Partial<ReturnType<typeof mockUseTasks>['allTasks'][0]> = {}) {
@@ -64,6 +85,19 @@ describe('WeeklyView', () => {
       deleteTask: vi.fn(),
       moveTask: vi.fn(),
       reorderTasks: vi.fn(),
+    })
+    mockUseSettings.mockReturnValue({
+      settings: {
+        workHoursStart: '09:00',
+        workHoursEnd: '18:00',
+        sleepStart: '23:00',
+        sleepEnd: '07:00',
+      },
+      isLoading: false,
+      error: null,
+      updateSettings: vi.fn(),
+      resetSettings: vi.fn(),
+      refresh: vi.fn(),
     })
   })
 
@@ -878,6 +912,67 @@ describe('WeeklyView', () => {
       // Custom task should appear on all 7 days (for now)
       const taskElements = screen.getAllByTestId('weekly-task-4')
       expect(taskElements).toHaveLength(7)
+    })
+  })
+
+  describe('time slots', () => {
+    it('renders time slots for each day by default', () => {
+      render(<WeeklyView />)
+
+      // Check that time slots are rendered for each day
+      for (let i = 0; i < 7; i++) {
+        expect(screen.getByTestId(`weekly-view-timeslot-${i}`)).toBeInTheDocument()
+      }
+    })
+
+    it('renders time slot legend in header', () => {
+      render(<WeeklyView />)
+
+      expect(screen.getByTestId('time-slot-legend')).toBeInTheDocument()
+    })
+
+    it('hides time slots when showTimeSlots is false', () => {
+      render(<WeeklyView showTimeSlots={false} />)
+
+      expect(screen.queryByTestId('weekly-view-timeslot-0')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('time-slot-legend')).not.toBeInTheDocument()
+    })
+
+    it('uses provided timeSlotSettings instead of useSettings', () => {
+      const customSettings = {
+        workHoursStart: '08:00',
+        workHoursEnd: '17:00',
+        sleepStart: '22:00',
+        sleepEnd: '06:00',
+      }
+
+      render(<WeeklyView timeSlotSettings={customSettings} />)
+
+      // Time slots should be rendered with custom settings
+      expect(screen.getByTestId('weekly-view-timeslot-0')).toBeInTheDocument()
+    })
+
+    it('does not render time slots while settings are loading', () => {
+      mockUseSettings.mockReturnValue({
+        settings: DEFAULT_SETTINGS,
+        isLoading: true,
+        error: null,
+        updateSettings: vi.fn(),
+        resetSettings: vi.fn(),
+        refresh: vi.fn(),
+      })
+
+      render(<WeeklyView />)
+
+      expect(screen.queryByTestId('weekly-view-timeslot-0')).not.toBeInTheDocument()
+    })
+
+    it('renders work and sleep blocks inside time slots', () => {
+      render(<WeeklyView />)
+
+      // Check first day's time slot has the time-slot component
+      const firstDayTimeSlot = screen.getByTestId('weekly-view-timeslot-0')
+      expect(firstDayTimeSlot.querySelector('[data-testid="time-slot"]')).toBeInTheDocument()
     })
   })
 })

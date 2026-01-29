@@ -1,8 +1,9 @@
 'use client'
 
-import { useCallback, useMemo, useSyncExternalStore } from 'react'
+import { useCallback, useMemo, useSyncExternalStore, useState, useEffect } from 'react'
 import { useGoalStore, type TreeNodeWithChildren } from './goal-store'
-import type { Goal, Task, NodeStatus, CreateGoalInput, CreateTaskInput, TaskFrequency } from '@/src/db'
+import type { Goal, Task, NodeStatus, CreateGoalInput, CreateTaskInput, TaskFrequency, Settings } from '@/src/db'
+import { db } from '@/src/db'
 
 const OPENAI_KEY_STORAGE_KEY = 'goaltree-openai-api-key'
 
@@ -466,5 +467,110 @@ export function useGoalTree() {
     // Shared actions
     initialize: goals.initialize,
     refresh: goals.refresh,
+  }
+}
+
+/**
+ * Default settings values
+ */
+export const DEFAULT_SETTINGS: Settings = {
+  workHoursStart: '09:00',
+  workHoursEnd: '18:00',
+  sleepStart: '23:00',
+  sleepEnd: '07:00',
+}
+
+/**
+ * Settings data with computed properties
+ */
+export interface SettingsData {
+  workHoursStart: string
+  workHoursEnd: string
+  sleepStart: string
+  sleepEnd: string
+}
+
+/**
+ * useSettings hook - manages work/sleep hours configuration
+ *
+ * This hook provides access to user settings stored in IndexedDB via Dexie.
+ * Settings include work hours and sleep hours for visualizing time blocks.
+ */
+export function useSettings() {
+  const [settings, setSettings] = useState<SettingsData>(DEFAULT_SETTINGS)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Load settings from database
+  const loadSettings = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+
+      const stored = await db.settings.toArray()
+      if (stored.length > 0) {
+        setSettings({
+          workHoursStart: stored[0].workHoursStart,
+          workHoursEnd: stored[0].workHoursEnd,
+          sleepStart: stored[0].sleepStart,
+          sleepEnd: stored[0].sleepEnd,
+        })
+      } else {
+        // No settings exist, use defaults
+        setSettings(DEFAULT_SETTINGS)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load settings')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  // Initialize on mount
+  useEffect(() => {
+    loadSettings()
+  }, [loadSettings])
+
+  // Update settings
+  const updateSettings = useCallback(async (updates: Partial<SettingsData>) => {
+    try {
+      setError(null)
+
+      const stored = await db.settings.toArray()
+      const newSettings = { ...settings, ...updates }
+
+      if (stored.length > 0) {
+        await db.settings.update(stored[0].id!, newSettings)
+      } else {
+        await db.settings.add(newSettings)
+      }
+
+      setSettings(newSettings)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update settings')
+      throw err
+    }
+  }, [settings])
+
+  // Reset settings to defaults
+  const resetSettings = useCallback(async () => {
+    try {
+      setError(null)
+      await db.settings.clear()
+      await db.settings.add(DEFAULT_SETTINGS)
+      setSettings(DEFAULT_SETTINGS)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to reset settings')
+      throw err
+    }
+  }, [])
+
+  return {
+    settings,
+    isLoading,
+    error,
+    updateSettings,
+    resetSettings,
+    refresh: loadSettings,
   }
 }

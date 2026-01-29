@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
-import { GoalTreeDatabase } from '@/src/db'
+import { renderHook, act, waitFor } from '@testing-library/react'
+import { GoalTreeDatabase, db } from '@/src/db'
 import { createGoalStore } from '@/lib/goal-store'
-import { useOpenAIKey } from '@/lib/hooks'
+import { useOpenAIKey, useSettings, DEFAULT_SETTINGS } from '@/lib/hooks'
 
 // We need to mock the useGoalStore hook to use our test database
 // Since the hooks use the singleton store, we'll test them by setting up data
@@ -582,3 +582,267 @@ function flattenTasks(nodes: TreeNode[]): TreeNode[] {
   collect(nodes)
   return result
 }
+
+describe('useSettings hook', () => {
+  beforeEach(async () => {
+    // Clear settings table before each test
+    await db.settings.clear()
+  })
+
+  afterEach(async () => {
+    // Clean up after each test
+    await db.settings.clear()
+  })
+
+  describe('initial state', () => {
+    it('returns default settings when no settings are stored', async () => {
+      const { result } = renderHook(() => useSettings())
+
+      // Wait for loading to complete
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false)
+      })
+
+      expect(result.current.settings).toEqual(DEFAULT_SETTINGS)
+      expect(result.current.error).toBeNull()
+    })
+
+    it('loads existing settings from database', async () => {
+      // Pre-populate settings
+      const customSettings = {
+        workHoursStart: '08:00',
+        workHoursEnd: '17:00',
+        sleepStart: '22:00',
+        sleepEnd: '06:00',
+      }
+      await db.settings.add(customSettings)
+
+      const { result } = renderHook(() => useSettings())
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false)
+      })
+
+      expect(result.current.settings.workHoursStart).toBe('08:00')
+      expect(result.current.settings.workHoursEnd).toBe('17:00')
+      expect(result.current.settings.sleepStart).toBe('22:00')
+      expect(result.current.settings.sleepEnd).toBe('06:00')
+    })
+
+    it('has loading state while fetching', () => {
+      const { result } = renderHook(() => useSettings())
+
+      // Initial state should be loading
+      expect(result.current.isLoading).toBe(true)
+    })
+  })
+
+  describe('updateSettings', () => {
+    it('updates work hours start', async () => {
+      const { result } = renderHook(() => useSettings())
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false)
+      })
+
+      await act(async () => {
+        await result.current.updateSettings({ workHoursStart: '07:30' })
+      })
+
+      expect(result.current.settings.workHoursStart).toBe('07:30')
+    })
+
+    it('updates work hours end', async () => {
+      const { result } = renderHook(() => useSettings())
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false)
+      })
+
+      await act(async () => {
+        await result.current.updateSettings({ workHoursEnd: '19:00' })
+      })
+
+      expect(result.current.settings.workHoursEnd).toBe('19:00')
+    })
+
+    it('updates sleep start', async () => {
+      const { result } = renderHook(() => useSettings())
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false)
+      })
+
+      await act(async () => {
+        await result.current.updateSettings({ sleepStart: '22:30' })
+      })
+
+      expect(result.current.settings.sleepStart).toBe('22:30')
+    })
+
+    it('updates sleep end', async () => {
+      const { result } = renderHook(() => useSettings())
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false)
+      })
+
+      await act(async () => {
+        await result.current.updateSettings({ sleepEnd: '06:30' })
+      })
+
+      expect(result.current.settings.sleepEnd).toBe('06:30')
+    })
+
+    it('updates multiple settings at once', async () => {
+      const { result } = renderHook(() => useSettings())
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false)
+      })
+
+      await act(async () => {
+        await result.current.updateSettings({
+          workHoursStart: '10:00',
+          workHoursEnd: '20:00',
+        })
+      })
+
+      expect(result.current.settings.workHoursStart).toBe('10:00')
+      expect(result.current.settings.workHoursEnd).toBe('20:00')
+      // Other settings should remain default
+      expect(result.current.settings.sleepStart).toBe(DEFAULT_SETTINGS.sleepStart)
+    })
+
+    it('persists settings to database', async () => {
+      const { result } = renderHook(() => useSettings())
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false)
+      })
+
+      await act(async () => {
+        await result.current.updateSettings({ workHoursStart: '08:15' })
+      })
+
+      // Verify it was saved to database
+      const stored = await db.settings.toArray()
+      expect(stored.length).toBe(1)
+      expect(stored[0].workHoursStart).toBe('08:15')
+    })
+
+    it('updates existing settings in database', async () => {
+      // Pre-populate settings
+      await db.settings.add({
+        workHoursStart: '09:00',
+        workHoursEnd: '18:00',
+        sleepStart: '23:00',
+        sleepEnd: '07:00',
+      })
+
+      const { result } = renderHook(() => useSettings())
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false)
+      })
+
+      await act(async () => {
+        await result.current.updateSettings({ workHoursStart: '08:00' })
+      })
+
+      // Verify only one record exists
+      const stored = await db.settings.toArray()
+      expect(stored.length).toBe(1)
+      expect(stored[0].workHoursStart).toBe('08:00')
+    })
+  })
+
+  describe('resetSettings', () => {
+    it('resets settings to defaults', async () => {
+      // Pre-populate with custom settings
+      await db.settings.add({
+        workHoursStart: '08:00',
+        workHoursEnd: '17:00',
+        sleepStart: '22:00',
+        sleepEnd: '06:00',
+      })
+
+      const { result } = renderHook(() => useSettings())
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false)
+      })
+
+      // Verify custom settings are loaded
+      expect(result.current.settings.workHoursStart).toBe('08:00')
+
+      await act(async () => {
+        await result.current.resetSettings()
+      })
+
+      expect(result.current.settings).toEqual(DEFAULT_SETTINGS)
+    })
+
+    it('persists default settings to database after reset', async () => {
+      await db.settings.add({
+        workHoursStart: '08:00',
+        workHoursEnd: '17:00',
+        sleepStart: '22:00',
+        sleepEnd: '06:00',
+      })
+
+      const { result } = renderHook(() => useSettings())
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false)
+      })
+
+      await act(async () => {
+        await result.current.resetSettings()
+      })
+
+      const stored = await db.settings.toArray()
+      expect(stored.length).toBe(1)
+      expect(stored[0].workHoursStart).toBe(DEFAULT_SETTINGS.workHoursStart)
+      expect(stored[0].workHoursEnd).toBe(DEFAULT_SETTINGS.workHoursEnd)
+    })
+  })
+
+  describe('refresh', () => {
+    it('reloads settings from database', async () => {
+      const { result } = renderHook(() => useSettings())
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false)
+      })
+
+      // Manually update database
+      await db.settings.clear()
+      await db.settings.add({
+        workHoursStart: '11:00',
+        workHoursEnd: '19:00',
+        sleepStart: '00:00',
+        sleepEnd: '08:00',
+      })
+
+      await act(async () => {
+        await result.current.refresh()
+      })
+
+      expect(result.current.settings.workHoursStart).toBe('11:00')
+      expect(result.current.settings.workHoursEnd).toBe('19:00')
+    })
+  })
+
+  describe('DEFAULT_SETTINGS', () => {
+    it('has correct default work hours', () => {
+      expect(DEFAULT_SETTINGS.workHoursStart).toBe('09:00')
+      expect(DEFAULT_SETTINGS.workHoursEnd).toBe('18:00')
+    })
+
+    it('has correct default sleep hours', () => {
+      expect(DEFAULT_SETTINGS.sleepStart).toBe('23:00')
+      expect(DEFAULT_SETTINGS.sleepEnd).toBe('07:00')
+    })
+  })
+})

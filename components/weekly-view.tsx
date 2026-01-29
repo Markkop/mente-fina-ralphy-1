@@ -11,7 +11,8 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { useTasks, type TaskWithMeta } from '@/lib/hooks'
+import { useTasks, useSettings, type TaskWithMeta, type SettingsData } from '@/lib/hooks'
+import { TimeSlot, TimeSlotLegend } from '@/components/time-slot'
 
 /**
  * Props for the WeeklyView component
@@ -27,6 +28,10 @@ export interface WeeklyViewProps {
   onTaskClick?: (task: TaskWithMeta) => void
   /** Callback when task completion is toggled */
   onToggleTask?: (taskId: number) => void
+  /** Whether to show time slots for work/sleep blocks */
+  showTimeSlots?: boolean
+  /** Override settings for time slots (uses useSettings by default) */
+  timeSlotSettings?: SettingsData
 }
 
 /**
@@ -151,8 +156,14 @@ export function WeeklyView({
   onWeekChange,
   onTaskClick,
   onToggleTask,
+  showTimeSlots = true,
+  timeSlotSettings,
 }: WeeklyViewProps) {
   const { allTasks, toggleTaskCompletion } = useTasks()
+  const { settings: defaultSettings, isLoading: settingsLoading } = useSettings()
+
+  // Use provided settings or default from hook
+  const settings = timeSlotSettings ?? defaultSettings
 
   // Calculate the current week start
   const currentWeekStart = useMemo(() => {
@@ -272,12 +283,17 @@ export function WeeklyView({
           </Button>
         </div>
 
-        <h2
-          className="text-lg font-semibold text-foreground"
-          data-testid="weekly-view-title"
-        >
-          {formatWeekRange(currentWeekStart)}
-        </h2>
+        <div className="flex items-center gap-4">
+          {showTimeSlots && !settingsLoading && (
+            <TimeSlotLegend data-testid="weekly-view-legend" />
+          )}
+          <h2
+            className="text-lg font-semibold text-foreground"
+            data-testid="weekly-view-title"
+          >
+            {formatWeekRange(currentWeekStart)}
+          </h2>
+        </div>
       </div>
 
       {/* Weekly Grid */}
@@ -329,6 +345,20 @@ export function WeeklyView({
                   {formatDayHeader(date)}
                 </div>
               </div>
+
+              {/* Time Slots */}
+              {showTimeSlots && !settingsLoading && (
+                <div
+                  className="mb-2"
+                  data-testid={`weekly-view-timeslot-${index}`}
+                >
+                  <TimeSlot
+                    settings={settings}
+                    compact
+                    showLabels={false}
+                  />
+                </div>
+              )}
 
               {/* Tasks List */}
               <div
