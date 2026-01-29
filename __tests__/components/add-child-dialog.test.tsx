@@ -362,10 +362,10 @@ describe('AddChildDialog', () => {
   })
 
   describe('root goal mode (parentNode = null)', () => {
-    it('shows "Create Root Goal" title when parentNode is null', () => {
+    it('shows "Create New Goal" title when parentNode is null', () => {
       render(<AddChildDialog {...defaultProps} parentNode={null} />)
 
-      expect(screen.getByTestId('add-child-dialog-title')).toHaveTextContent('Create Root Goal')
+      expect(screen.getByTestId('add-child-dialog-title')).toHaveTextContent('Create New Goal')
     })
 
     it('shows appropriate description for root goal', () => {

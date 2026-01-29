@@ -229,7 +229,7 @@ export function AddChildDialog({
         <DialogHeader>
           <DialogTitle data-testid="add-child-dialog-title">
             {isRootGoal
-              ? 'Create Root Goal'
+              ? 'Create New Goal'
               : `Add to "${parentNode?.title || 'Node'}"`}
           </DialogTitle>
           <DialogDescription data-testid="add-child-dialog-description">
