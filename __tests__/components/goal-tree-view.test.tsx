@@ -727,6 +727,45 @@ describe('GoalTreeView', () => {
       expect(onAddChild).toHaveBeenCalledWith(goal)
     })
 
+    it('calls onDelete when delete button is clicked on a goal', () => {
+      const onDelete = vi.fn()
+      const goal = createMockGoal({ id: 1, title: 'Goal to Delete' })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<GoalTreeView onDelete={onDelete} />)
+
+      fireEvent.click(screen.getByTestId('goal-delete-button-1'))
+
+      expect(onDelete).toHaveBeenCalledWith(goal)
+    })
+
+    it('calls onDelete when delete button is clicked on a nested task', () => {
+      const onDelete = vi.fn()
+      const task = createMockTask({ id: 101, title: 'Task to Delete' })
+      const goal = createMockGoal({
+        id: 1,
+        title: 'Parent Goal',
+        children: [task],
+      })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<GoalTreeView onDelete={onDelete} />)
+
+      fireEvent.click(screen.getByTestId('delete-button-101'))
+
+      expect(onDelete).toHaveBeenCalledWith(task)
+    })
+
     it('passes selectedNodeId to GoalNode components', () => {
       const goal = createMockGoal({ id: 1 })
       mockHookState = {
