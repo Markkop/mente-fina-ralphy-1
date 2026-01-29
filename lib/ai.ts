@@ -1,5 +1,6 @@
 "use client"
 
+import { useCallback, useSyncExternalStore } from "react"
 import { createOpenAI, type OpenAIProvider } from "@ai-sdk/openai"
 
 const API_KEY_STORAGE_KEY = "goaltree-openai-api-key"
@@ -42,6 +43,64 @@ export function removeOpenAIKey(): void {
  */
 export function hasOpenAIKey(): boolean {
   return getOpenAIKey() !== null
+}
+
+// Event emitter for localStorage changes
+const listeners = new Set<() => void>()
+
+function emitChange() {
+  for (const listener of listeners) {
+    listener()
+  }
+}
+
+function subscribe(callback: () => void) {
+  listeners.add(callback)
+  return () => listeners.delete(callback)
+}
+
+function getSnapshot(): string | null {
+  return getOpenAIKey()
+}
+
+function getServerSnapshot(): string | null {
+  return null
+}
+
+/**
+ * React hook to manage OpenAI API key in LocalStorage
+ * Provides reactive state and methods for key management
+ * Uses useSyncExternalStore for proper synchronization with localStorage
+ */
+export function useOpenAIKey() {
+  // Use useSyncExternalStore to subscribe to localStorage changes
+  const apiKey = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
+
+  // Save key to localStorage and notify listeners
+  const saveApiKey = useCallback((key: string) => {
+    setOpenAIKey(key)
+    emitChange()
+  }, [])
+
+  // Remove key from localStorage and notify listeners
+  const clearApiKey = useCallback(() => {
+    removeOpenAIKey()
+    emitChange()
+  }, [])
+
+  // Check if key is set
+  const hasKey = apiKey !== null && apiKey.length > 0
+
+  // isLoaded is always true on client after hydration
+  const isLoaded = typeof window !== "undefined"
+
+  return {
+    apiKey,
+    hasKey,
+    isLoaded,
+    saveApiKey,
+    clearApiKey,
+  }
 }
 
 /**
