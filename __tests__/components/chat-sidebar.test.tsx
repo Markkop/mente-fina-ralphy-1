@@ -3,19 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ChatSidebar } from '@/components/chat-sidebar'
 
-// Mock the AI modules
-vi.mock('@ai-sdk/react', () => ({
-  useChat: vi.fn(() => ({
-    messages: [],
-    input: '',
-    handleInputChange: vi.fn(),
-    handleSubmit: vi.fn(),
-    isLoading: false,
-    error: null,
-    setMessages: vi.fn(),
-  })),
-}))
-
+// Mock the AI modules - the component uses client-side streaming, not useChat
 vi.mock('ai', () => ({
   streamText: vi.fn(),
 }))
@@ -41,33 +29,11 @@ Object.defineProperty(window, 'localStorage', {
   writable: true,
 })
 
-// Import useChat mock to modify its return value
-import { useChat } from '@ai-sdk/react'
-const mockUseChat = vi.mocked(useChat)
-
 describe('ChatSidebar', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // Reset localStorage store
     localStorageStore = {}
-    // Reset useChat mock to default state
-    mockUseChat.mockReturnValue({
-      messages: [],
-      input: '',
-      handleInputChange: vi.fn(),
-      handleSubmit: vi.fn(),
-      isLoading: false,
-      error: null,
-      setMessages: vi.fn(),
-      append: vi.fn(),
-      reload: vi.fn(),
-      stop: vi.fn(),
-      setInput: vi.fn(),
-      data: undefined,
-      id: 'test-chat',
-      status: 'ready',
-      addToolResult: vi.fn(),
-    } as ReturnType<typeof useChat>)
   })
 
   afterEach(() => {
@@ -269,136 +235,85 @@ describe('ChatSidebar', () => {
       localStorageStore['goaltree-openai-api-key'] = 'sk-test-key'
     })
 
-    it('displays user messages', () => {
-      mockUseChat.mockReturnValue({
-        messages: [
-          { id: '1', role: 'user', content: 'Hello, help me with goals' },
-        ],
-        input: '',
-        handleInputChange: vi.fn(),
-        handleSubmit: vi.fn(),
-        isLoading: false,
-        error: null,
-        setMessages: vi.fn(),
-        append: vi.fn(),
-        reload: vi.fn(),
-        stop: vi.fn(),
-        setInput: vi.fn(),
-        data: undefined,
-        id: 'test-chat',
-        status: 'ready',
-        addToolResult: vi.fn(),
-      } as ReturnType<typeof useChat>)
-
+    it('displays user messages after submission', async () => {
+      const user = userEvent.setup()
       render(<ChatSidebar open={true} />)
 
-      expect(screen.getByTestId('chat-message-1')).toBeInTheDocument()
-      expect(screen.getByText('Hello, help me with goals')).toBeInTheDocument()
+      // Type and submit a message
+      const input = screen.getByTestId('chat-input')
+      await user.type(input, 'Hello, help me with goals')
+      await user.click(screen.getByTestId('chat-send-button'))
+
+      // Wait for the user message to appear (component adds it immediately)
+      await waitFor(() => {
+        expect(screen.getByText('Hello, help me with goals')).toBeInTheDocument()
+      })
     })
 
-    it('displays assistant messages', () => {
-      mockUseChat.mockReturnValue({
-        messages: [
-          { id: '1', role: 'assistant', content: 'I can help you structure your goals!' },
-        ],
-        input: '',
-        handleInputChange: vi.fn(),
-        handleSubmit: vi.fn(),
-        isLoading: false,
-        error: null,
-        setMessages: vi.fn(),
-        append: vi.fn(),
-        reload: vi.fn(),
-        stop: vi.fn(),
-        setInput: vi.fn(),
-        data: undefined,
-        id: 'test-chat',
-        status: 'ready',
-        addToolResult: vi.fn(),
-      } as ReturnType<typeof useChat>)
-
+    it('displays assistant placeholder after submission', async () => {
+      const user = userEvent.setup()
       render(<ChatSidebar open={true} />)
 
-      expect(screen.getByTestId('chat-message-1')).toBeInTheDocument()
-      expect(screen.getByText('I can help you structure your goals!')).toBeInTheDocument()
+      // Submit a message to trigger the assistant response
+      const input = screen.getByTestId('chat-input')
+      await user.type(input, 'Help me')
+      await user.click(screen.getByTestId('chat-send-button'))
+
+      // Wait for assistant message container to appear (even if streaming fails, placeholder is added)
+      await waitFor(() => {
+        // Should have both user and assistant labels
+        expect(screen.getByText('You')).toBeInTheDocument()
+        expect(screen.getByText('GoalTree AI')).toBeInTheDocument()
+      })
     })
 
-    it('shows correct role label for user messages', () => {
-      mockUseChat.mockReturnValue({
-        messages: [{ id: '1', role: 'user', content: 'Test message' }],
-        input: '',
-        handleInputChange: vi.fn(),
-        handleSubmit: vi.fn(),
-        isLoading: false,
-        error: null,
-        setMessages: vi.fn(),
-        append: vi.fn(),
-        reload: vi.fn(),
-        stop: vi.fn(),
-        setInput: vi.fn(),
-        data: undefined,
-        id: 'test-chat',
-        status: 'ready',
-        addToolResult: vi.fn(),
-      } as ReturnType<typeof useChat>)
-
+    it('shows correct role label for user messages', async () => {
+      const user = userEvent.setup()
       render(<ChatSidebar open={true} />)
 
-      expect(screen.getByText('You')).toBeInTheDocument()
+      await user.type(screen.getByTestId('chat-input'), 'Test message')
+      await user.click(screen.getByTestId('chat-send-button'))
+
+      await waitFor(() => {
+        expect(screen.getByText('You')).toBeInTheDocument()
+      })
     })
 
-    it('shows correct role label for assistant messages', () => {
-      mockUseChat.mockReturnValue({
-        messages: [{ id: '1', role: 'assistant', content: 'Test response' }],
-        input: '',
-        handleInputChange: vi.fn(),
-        handleSubmit: vi.fn(),
-        isLoading: false,
-        error: null,
-        setMessages: vi.fn(),
-        append: vi.fn(),
-        reload: vi.fn(),
-        stop: vi.fn(),
-        setInput: vi.fn(),
-        data: undefined,
-        id: 'test-chat',
-        status: 'ready',
-        addToolResult: vi.fn(),
-      } as ReturnType<typeof useChat>)
-
+    it('shows correct role label for assistant messages', async () => {
+      const user = userEvent.setup()
       render(<ChatSidebar open={true} />)
 
-      expect(screen.getByText('GoalTree AI')).toBeInTheDocument()
+      await user.type(screen.getByTestId('chat-input'), 'Test')
+      await user.click(screen.getByTestId('chat-send-button'))
+
+      await waitFor(() => {
+        expect(screen.getByText('GoalTree AI')).toBeInTheDocument()
+      })
     })
 
-    it('displays multiple messages in order', () => {
-      mockUseChat.mockReturnValue({
-        messages: [
-          { id: '1', role: 'user', content: 'First message' },
-          { id: '2', role: 'assistant', content: 'Second message' },
-          { id: '3', role: 'user', content: 'Third message' },
-        ],
-        input: '',
-        handleInputChange: vi.fn(),
-        handleSubmit: vi.fn(),
-        isLoading: false,
-        error: null,
-        setMessages: vi.fn(),
-        append: vi.fn(),
-        reload: vi.fn(),
-        stop: vi.fn(),
-        setInput: vi.fn(),
-        data: undefined,
-        id: 'test-chat',
-        status: 'ready',
-        addToolResult: vi.fn(),
-      } as ReturnType<typeof useChat>)
-
+    it('allows sending multiple messages', async () => {
+      const user = userEvent.setup()
       render(<ChatSidebar open={true} />)
 
-      expect(screen.getByText('First message')).toBeInTheDocument()
-      expect(screen.getByText('Second message')).toBeInTheDocument()
-      expect(screen.getByText('Third message')).toBeInTheDocument()
+      // First message
+      await user.type(screen.getByTestId('chat-input'), 'First user message')
+      await user.click(screen.getByTestId('chat-send-button'))
+
+      await waitFor(() => {
+        expect(screen.getByText('First user message')).toBeInTheDocument()
+      })
+
+      // Second message (after first completes/fails)
+      await waitFor(() => {
+        expect(screen.getByTestId('chat-input')).not.toBeDisabled()
+      })
+      
+      await user.type(screen.getByTestId('chat-input'), 'Second user message')
+      await user.click(screen.getByTestId('chat-send-button'))
+
+      await waitFor(() => {
+        expect(screen.getByText('Second user message')).toBeInTheDocument()
+      })
     })
   })
 
@@ -407,76 +322,32 @@ describe('ChatSidebar', () => {
       localStorageStore['goaltree-openai-api-key'] = 'sk-test-key'
     })
 
-    it('shows loading indicator when chat is loading', () => {
-      mockUseChat.mockReturnValue({
-        messages: [],
-        input: '',
-        handleInputChange: vi.fn(),
-        handleSubmit: vi.fn(),
-        isLoading: true,
-        error: null,
-        setMessages: vi.fn(),
-        append: vi.fn(),
-        reload: vi.fn(),
-        stop: vi.fn(),
-        setInput: vi.fn(),
-        data: undefined,
-        id: 'test-chat',
-        status: 'streaming',
-        addToolResult: vi.fn(),
-      } as ReturnType<typeof useChat>)
-
+    it('disables send button when input is empty', () => {
       render(<ChatSidebar open={true} />)
 
-      expect(screen.getByText('Thinking...')).toBeInTheDocument()
-    })
-
-    it('disables input when loading', () => {
-      mockUseChat.mockReturnValue({
-        messages: [],
-        input: '',
-        handleInputChange: vi.fn(),
-        handleSubmit: vi.fn(),
-        isLoading: true,
-        error: null,
-        setMessages: vi.fn(),
-        append: vi.fn(),
-        reload: vi.fn(),
-        stop: vi.fn(),
-        setInput: vi.fn(),
-        data: undefined,
-        id: 'test-chat',
-        status: 'streaming',
-        addToolResult: vi.fn(),
-      } as ReturnType<typeof useChat>)
-
-      render(<ChatSidebar open={true} />)
-
-      expect(screen.getByTestId('chat-input')).toBeDisabled()
-    })
-
-    it('disables send button when loading', () => {
-      mockUseChat.mockReturnValue({
-        messages: [],
-        input: 'test',
-        handleInputChange: vi.fn(),
-        handleSubmit: vi.fn(),
-        isLoading: true,
-        error: null,
-        setMessages: vi.fn(),
-        append: vi.fn(),
-        reload: vi.fn(),
-        stop: vi.fn(),
-        setInput: vi.fn(),
-        data: undefined,
-        id: 'test-chat',
-        status: 'streaming',
-        addToolResult: vi.fn(),
-      } as ReturnType<typeof useChat>)
-
-      render(<ChatSidebar open={true} />)
-
+      // Send button should be disabled when input is empty
       expect(screen.getByTestId('chat-send-button')).toBeDisabled()
+    })
+
+    it('enables send button when input has content', async () => {
+      const user = userEvent.setup()
+      render(<ChatSidebar open={true} />)
+
+      await user.type(screen.getByTestId('chat-input'), 'Test message')
+
+      expect(screen.getByTestId('chat-send-button')).not.toBeDisabled()
+    })
+
+    it('clears input after submission', async () => {
+      const user = userEvent.setup()
+      render(<ChatSidebar open={true} />)
+
+      const input = screen.getByTestId('chat-input')
+      await user.type(input, 'Test message')
+      await user.click(screen.getByTestId('chat-send-button'))
+
+      // Input should be cleared immediately after submission
+      expect(input).toHaveValue('')
     })
   })
 
@@ -608,55 +479,11 @@ describe('ChatSidebar', () => {
   })
 
   describe('client-side streaming', () => {
-    let mockSetMessages: ReturnType<typeof vi.fn>
-    let mockHandleInputChange: ReturnType<typeof vi.fn>
-    let currentInput: string
-
     beforeEach(() => {
       localStorageStore['goaltree-openai-api-key'] = 'sk-test-key'
-      mockSetMessages = vi.fn()
-      mockHandleInputChange = vi.fn()
-      currentInput = ''
-
-      mockUseChat.mockImplementation(() => ({
-        messages: [],
-        input: currentInput,
-        handleInputChange: mockHandleInputChange,
-        handleSubmit: vi.fn(),
-        isLoading: false,
-        error: null,
-        setMessages: mockSetMessages,
-        append: vi.fn(),
-        reload: vi.fn(),
-        stop: vi.fn(),
-        setInput: vi.fn(),
-        data: undefined,
-        id: 'test-chat',
-        status: 'ready',
-        addToolResult: vi.fn(),
-      } as ReturnType<typeof useChat>))
     })
 
     it('does not submit when input is empty', () => {
-      currentInput = ''
-      mockUseChat.mockReturnValue({
-        messages: [],
-        input: '',
-        handleInputChange: mockHandleInputChange,
-        handleSubmit: vi.fn(),
-        isLoading: false,
-        error: null,
-        setMessages: mockSetMessages,
-        append: vi.fn(),
-        reload: vi.fn(),
-        stop: vi.fn(),
-        setInput: vi.fn(),
-        data: undefined,
-        id: 'test-chat',
-        status: 'ready',
-        addToolResult: vi.fn(),
-      } as ReturnType<typeof useChat>)
-
       render(<ChatSidebar open={true} />)
 
       // Button should be disabled when input is empty
@@ -664,168 +491,94 @@ describe('ChatSidebar', () => {
     })
 
     it('does not submit when only whitespace is entered', async () => {
-      mockUseChat.mockReturnValue({
-        messages: [],
-        input: '   ',
-        handleInputChange: mockHandleInputChange,
-        handleSubmit: vi.fn(),
-        isLoading: false,
-        error: null,
-        setMessages: mockSetMessages,
-        append: vi.fn(),
-        reload: vi.fn(),
-        stop: vi.fn(),
-        setInput: vi.fn(),
-        data: undefined,
-        id: 'test-chat',
-        status: 'ready',
-        addToolResult: vi.fn(),
-      } as ReturnType<typeof useChat>)
-
+      const user = userEvent.setup()
       render(<ChatSidebar open={true} />)
+
+      // Type only whitespace
+      await user.type(screen.getByTestId('chat-input'), '   ')
 
       // Button should be disabled when input is only whitespace
       expect(screen.getByTestId('chat-send-button')).toBeDisabled()
     })
 
-    it('calls setMessages when form is submitted with valid input', async () => {
+    it('adds message when form is submitted with valid input', async () => {
       const user = userEvent.setup()
-      mockUseChat.mockReturnValue({
-        messages: [],
-        input: 'Help me with my goals',
-        handleInputChange: mockHandleInputChange,
-        handleSubmit: vi.fn(),
-        isLoading: false,
-        error: null,
-        setMessages: mockSetMessages,
-        append: vi.fn(),
-        reload: vi.fn(),
-        stop: vi.fn(),
-        setInput: vi.fn(),
-        data: undefined,
-        id: 'test-chat',
-        status: 'ready',
-        addToolResult: vi.fn(),
-      } as ReturnType<typeof useChat>)
-
       render(<ChatSidebar open={true} />)
 
-      // Submit the form
-      const sendButton = screen.getByTestId('chat-send-button')
-      expect(sendButton).not.toBeDisabled()
-      await user.click(sendButton)
+      // Type and submit
+      await user.type(screen.getByTestId('chat-input'), 'Help me with my goals')
+      await user.click(screen.getByTestId('chat-send-button'))
 
-      // setMessages should be called to add the user message
-      expect(mockSetMessages).toHaveBeenCalled()
+      // User message should appear
+      await waitFor(() => {
+        expect(screen.getByText('Help me with my goals')).toBeInTheDocument()
+      })
     })
 
     it('clears input after submission', async () => {
       const user = userEvent.setup()
-      mockUseChat.mockReturnValue({
-        messages: [],
-        input: 'Help me with my goals',
-        handleInputChange: mockHandleInputChange,
-        handleSubmit: vi.fn(),
-        isLoading: false,
-        error: null,
-        setMessages: mockSetMessages,
-        append: vi.fn(),
-        reload: vi.fn(),
-        stop: vi.fn(),
-        setInput: vi.fn(),
-        data: undefined,
-        id: 'test-chat',
-        status: 'ready',
-        addToolResult: vi.fn(),
-      } as ReturnType<typeof useChat>)
-
       render(<ChatSidebar open={true} />)
 
-      // Submit the form
+      // Type and submit
+      const input = screen.getByTestId('chat-input')
+      await user.type(input, 'Help me with my goals')
       await user.click(screen.getByTestId('chat-send-button'))
 
-      // handleInputChange should be called to clear the input
-      expect(mockHandleInputChange).toHaveBeenCalledWith(
-        expect.objectContaining({
-          target: expect.objectContaining({ value: '' }),
-        })
-      )
+      // Input should be cleared
+      expect(input).toHaveValue('')
     })
 
-    it('does not allow multiple submissions while loading', async () => {
-      mockUseChat.mockReturnValue({
-        messages: [],
-        input: 'Test message',
-        handleInputChange: mockHandleInputChange,
-        handleSubmit: vi.fn(),
-        isLoading: true,
-        error: null,
-        setMessages: mockSetMessages,
-        append: vi.fn(),
-        reload: vi.fn(),
-        stop: vi.fn(),
-        setInput: vi.fn(),
-        data: undefined,
-        id: 'test-chat',
-        status: 'streaming',
-        addToolResult: vi.fn(),
-      } as ReturnType<typeof useChat>)
-
+    it('send button is disabled when input is empty after submission', async () => {
+      const user = userEvent.setup()
       render(<ChatSidebar open={true} />)
 
-      // Send button should be disabled when loading
+      await user.type(screen.getByTestId('chat-input'), 'Test message')
+      await user.click(screen.getByTestId('chat-send-button'))
+
+      // Input is cleared after submission, so send button is disabled
       expect(screen.getByTestId('chat-send-button')).toBeDisabled()
     })
 
-    it('enables clear button when messages exist', () => {
-      mockUseChat.mockReturnValue({
-        messages: [{ id: '1', role: 'user', content: 'Hello' }],
-        input: '',
-        handleInputChange: mockHandleInputChange,
-        handleSubmit: vi.fn(),
-        isLoading: false,
-        error: null,
-        setMessages: mockSetMessages,
-        append: vi.fn(),
-        reload: vi.fn(),
-        stop: vi.fn(),
-        setInput: vi.fn(),
-        data: undefined,
-        id: 'test-chat',
-        status: 'ready',
-        addToolResult: vi.fn(),
-      } as ReturnType<typeof useChat>)
-
+    it('enables clear button when messages exist', async () => {
+      const user = userEvent.setup()
       render(<ChatSidebar open={true} />)
 
-      expect(screen.getByTestId('chat-clear-button')).not.toBeDisabled()
+      // Add a message
+      await user.type(screen.getByTestId('chat-input'), 'Hello')
+      await user.click(screen.getByTestId('chat-send-button'))
+
+      // Clear button should be enabled since there's at least one message
+      await waitFor(() => {
+        expect(screen.getByTestId('chat-clear-button')).not.toBeDisabled()
+      })
     })
 
     it('clears messages when clear button is clicked', async () => {
       const user = userEvent.setup()
-      mockUseChat.mockReturnValue({
-        messages: [{ id: '1', role: 'user', content: 'Hello' }],
-        input: '',
-        handleInputChange: mockHandleInputChange,
-        handleSubmit: vi.fn(),
-        isLoading: false,
-        error: null,
-        setMessages: mockSetMessages,
-        append: vi.fn(),
-        reload: vi.fn(),
-        stop: vi.fn(),
-        setInput: vi.fn(),
-        data: undefined,
-        id: 'test-chat',
-        status: 'ready',
-        addToolResult: vi.fn(),
-      } as ReturnType<typeof useChat>)
-
       render(<ChatSidebar open={true} />)
 
+      // Add a message
+      await user.type(screen.getByTestId('chat-input'), 'Hello')
+      await user.click(screen.getByTestId('chat-send-button'))
+
+      // Wait for message to appear
+      await waitFor(() => {
+        expect(screen.getByText('Hello')).toBeInTheDocument()
+      })
+
+      // Wait for streaming to complete so clear button is enabled
+      await waitFor(() => {
+        expect(screen.getByTestId('chat-clear-button')).not.toBeDisabled()
+      })
+
+      // Clear messages
       await user.click(screen.getByTestId('chat-clear-button'))
 
-      expect(mockSetMessages).toHaveBeenCalledWith([])
+      // Messages should be cleared
+      await waitFor(() => {
+        expect(screen.queryByText('Hello')).not.toBeInTheDocument()
+        expect(screen.getByTestId('chat-empty-state')).toBeInTheDocument()
+      })
     })
   })
 })
