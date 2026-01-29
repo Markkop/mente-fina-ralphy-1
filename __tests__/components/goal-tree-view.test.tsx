@@ -196,7 +196,7 @@ describe('GoalTreeView', () => {
       ).toBeInTheDocument()
     })
 
-    it('shows New Goal button in empty state when onNewGoal is provided', () => {
+    it('shows Create Your First Goal button in empty state when onNewGoal is provided', () => {
       mockHookState = {
         rootGoals: [],
         isLoading: false,
@@ -207,10 +207,10 @@ describe('GoalTreeView', () => {
       render(<GoalTreeView onNewGoal={() => {}} />)
 
       expect(screen.getByTestId('goal-tree-view-empty-new-goal')).toBeInTheDocument()
-      expect(screen.getByText('New Goal')).toBeInTheDocument()
+      expect(screen.getByText('Create Your First Goal')).toBeInTheDocument()
     })
 
-    it('does not show New Goal button in empty state when onNewGoal is not provided', () => {
+    it('does not show Create Your First Goal button in empty state when onNewGoal is not provided', () => {
       mockHookState = {
         rootGoals: [],
         isLoading: false,
@@ -223,7 +223,7 @@ describe('GoalTreeView', () => {
       expect(screen.queryByTestId('goal-tree-view-empty-new-goal')).not.toBeInTheDocument()
     })
 
-    it('calls onNewGoal when New Goal button is clicked in empty state', () => {
+    it('calls onNewGoal when Create Your First Goal button is clicked in empty state', () => {
       const onNewGoal = vi.fn()
       mockHookState = {
         rootGoals: [],
@@ -239,7 +239,7 @@ describe('GoalTreeView', () => {
       expect(onNewGoal).toHaveBeenCalledTimes(1)
     })
 
-    it('shows New Goal button in empty state when onCreateRootGoal is provided', () => {
+    it('shows Create Your First Goal button in empty state when onCreateRootGoal is provided', () => {
       mockHookState = {
         rootGoals: [],
         isLoading: false,
@@ -252,7 +252,7 @@ describe('GoalTreeView', () => {
       expect(screen.getByTestId('goal-tree-view-empty-new-goal')).toBeInTheDocument()
     })
 
-    it('calls onCreateRootGoal when New Goal button is clicked in empty state', () => {
+    it('calls onCreateRootGoal when Create Your First Goal button is clicked in empty state', () => {
       const onCreateRootGoal = vi.fn()
       mockHookState = {
         rootGoals: [],
@@ -268,7 +268,7 @@ describe('GoalTreeView', () => {
       expect(onCreateRootGoal).toHaveBeenCalledTimes(1)
     })
 
-    it('calls both onNewGoal and onCreateRootGoal when button is clicked in empty state', () => {
+    it('calls both onNewGoal and onCreateRootGoal when Create Your First Goal button is clicked in empty state', () => {
       const onNewGoal = vi.fn()
       const onCreateRootGoal = vi.fn()
       mockHookState = {
@@ -284,6 +284,22 @@ describe('GoalTreeView', () => {
 
       expect(onNewGoal).toHaveBeenCalledTimes(1)
       expect(onCreateRootGoal).toHaveBeenCalledTimes(1)
+    })
+
+    it('Create Your First Goal button has correct aria-label', () => {
+      mockHookState = {
+        rootGoals: [],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<GoalTreeView onNewGoal={() => {}} />)
+
+      expect(screen.getByTestId('goal-tree-view-empty-new-goal')).toHaveAttribute(
+        'aria-label',
+        'Create your first goal'
+      )
     })
   })
 

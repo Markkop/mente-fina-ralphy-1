@@ -2,15 +2,34 @@
 
 import { AppLayout } from '@/components/app-layout'
 import { SettingsModal } from '@/components/settings-modal'
-import { useState } from 'react'
+import { AddChildDialog } from '@/components/add-child-dialog'
+import { useState, useCallback } from 'react'
 import { Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useGoalStore } from '@/lib/goal-store'
+import type { TreeNodeWithChildren } from '@/lib/goal-store'
 
 // Disable static generation since we use IndexedDB (client-side only)
 export const dynamic = 'force-dynamic'
 
 export default function Home() {
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [selectedParentNode, setSelectedParentNode] = useState<TreeNodeWithChildren | null>(null)
+  
+  const { addGoal, addMilestone, addRequirement, addTask } = useGoalStore()
+
+  // Open dialog for creating a root goal (empty state button)
+  const handleCreateRootGoal = useCallback(() => {
+    setSelectedParentNode(null)
+    setAddDialogOpen(true)
+  }, [])
+
+  // Open dialog for adding a child to an existing node
+  const handleAddChild = useCallback((parentNode: TreeNodeWithChildren) => {
+    setSelectedParentNode(parentNode)
+    setAddDialogOpen(true)
+  }, [])
 
   return (
     <>
@@ -28,8 +47,21 @@ export default function Home() {
             </Button>
           </div>
         }
+        goalTreeViewProps={{
+          onCreateRootGoal: handleCreateRootGoal,
+        }}
+        onAddChild={handleAddChild}
       />
       <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <AddChildDialog
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
+        parentNode={selectedParentNode}
+        onAddGoal={addGoal}
+        onAddMilestone={addMilestone}
+        onAddRequirement={addRequirement}
+        onAddTask={addTask}
+      />
     </>
   )
 }

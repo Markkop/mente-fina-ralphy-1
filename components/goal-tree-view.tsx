@@ -215,16 +215,16 @@ export function GoalTreeView({
         {(onNewGoal || onCreateRootGoal) && (
           <Button
             variant="default"
-            size="sm"
+            size="default"
             onClick={() => {
               onNewGoal?.()
               handleCreateRootGoal()
             }}
-            aria-label="Create new goal"
+            aria-label="Create your first goal"
             data-testid="goal-tree-view-empty-new-goal"
           >
             <Plus className="h-4 w-4 mr-2" />
-            New Goal
+            Create Your First Goal
           </Button>
         )}
       </div>
