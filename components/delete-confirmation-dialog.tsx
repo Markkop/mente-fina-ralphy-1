@@ -39,6 +39,54 @@ function countDescendants(node: TreeNodeWithChildren): number {
 }
 
 /**
+ * Counts descendants by type for detailed cascade warning
+ */
+function countDescendantsByType(node: TreeNodeWithChildren): Record<string, number> {
+  const counts: Record<string, number> = {}
+  
+  function countRecursive(n: TreeNodeWithChildren) {
+    for (const child of n.children) {
+      const type = child.nodeType
+      counts[type] = (counts[type] || 0) + 1
+      countRecursive(child)
+    }
+  }
+  
+  countRecursive(node)
+  return counts
+}
+
+/**
+ * Formats descendant counts for display
+ */
+function formatDescendantSummary(counts: Record<string, number>): string {
+  const parts: string[] = []
+  const typeOrder = ['goal', 'milestone', 'requirement', 'task']
+  
+  for (const type of typeOrder) {
+    const count = counts[type]
+    if (count > 0) {
+      const label = count === 1 ? type : `${type}s`
+      parts.push(`${count} ${label}`)
+    }
+  }
+  
+  // Handle any unknown types
+  for (const [type, count] of Object.entries(counts)) {
+    if (!typeOrder.includes(type) && count > 0) {
+      const label = count === 1 ? 'item' : 'items'
+      parts.push(`${count} ${label}`)
+    }
+  }
+  
+  if (parts.length === 0) return ''
+  if (parts.length === 1) return parts[0]
+  if (parts.length === 2) return `${parts[0]} and ${parts[1]}`
+  
+  return parts.slice(0, -1).join(', ') + ', and ' + parts[parts.length - 1]
+}
+
+/**
  * Get display name for a node type
  */
 function getNodeTypeLabel(nodeType: string): string {
@@ -73,6 +121,8 @@ export function DeleteConfirmationDialog({
 
   // Calculate total descendants that will be deleted
   const descendantCount = node ? countDescendants(node) : 0
+  const descendantsByType = node ? countDescendantsByType(node) : {}
+  const descendantSummary = formatDescendantSummary(descendantsByType)
   const nodeTypeLabel = node ? getNodeTypeLabel(node.nodeType) : 'item'
 
   // Handle delete confirmation
@@ -128,16 +178,22 @@ export function DeleteConfirmationDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Warning about descendants */}
+        {/* Cascade delete warning */}
         {descendantCount > 0 && (
           <div
-            className="rounded-lg border border-destructive/50 bg-destructive/10 p-3"
+            className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 space-y-2"
             role="alert"
             data-testid="descendant-warning"
           >
-            <p className="text-sm text-destructive">
-              <strong>Warning:</strong> This will also permanently delete{' '}
-              {descendantCount} {descendantCount === 1 ? 'child item' : 'child items'}.
+            <p className="text-sm font-semibold text-destructive" data-testid="cascade-warning-title">
+              <strong>Cascade Delete Warning</strong>
+            </p>
+            <p className="text-sm text-destructive" data-testid="cascade-warning-message">
+              Deleting this {nodeTypeLabel} will also permanently remove all of its
+              nested content. This includes {descendantSummary} ({descendantCount} {descendantCount === 1 ? 'item' : 'items'} total).
+            </p>
+            <p className="text-xs text-destructive/80" data-testid="cascade-warning-note">
+              This action cannot be undone. All nested goals, milestones, requirements, and tasks will be permanently deleted.
             </p>
           </div>
         )}

@@ -204,7 +204,8 @@ describe('DeleteConfirmationDialog', () => {
 
       render(<DeleteConfirmationDialog {...defaultProps} node={nodeWithOneChild} />)
 
-      expect(screen.getByTestId('descendant-warning')).toHaveTextContent('1 child item')
+      expect(screen.getByTestId('cascade-warning-message')).toHaveTextContent('1 task')
+      expect(screen.getByTestId('cascade-warning-message')).toHaveTextContent('1 item total')
     })
 
     it('shows correct count for multiple children and grandchildren', () => {
@@ -216,7 +217,7 @@ describe('DeleteConfirmationDialog', () => {
       )
 
       // 2 direct children + 1 grandchild = 3 items
-      expect(screen.getByTestId('descendant-warning')).toHaveTextContent('3 child items')
+      expect(screen.getByTestId('cascade-warning-message')).toHaveTextContent('3 items total')
     })
 
     it('uses plural form for multiple items', () => {
@@ -229,7 +230,119 @@ describe('DeleteConfirmationDialog', () => {
 
       render(<DeleteConfirmationDialog {...defaultProps} node={nodeWithMultipleChildren} />)
 
-      expect(screen.getByTestId('descendant-warning')).toHaveTextContent('2 child items')
+      expect(screen.getByTestId('cascade-warning-message')).toHaveTextContent('2 tasks')
+      expect(screen.getByTestId('cascade-warning-message')).toHaveTextContent('2 items total')
+    })
+  })
+
+  describe('cascade delete warning message', () => {
+    it('shows cascade warning title', () => {
+      render(
+        <DeleteConfirmationDialog
+          {...defaultProps}
+          node={createMockNodeWithChildren()}
+        />
+      )
+
+      expect(screen.getByTestId('cascade-warning-title')).toHaveTextContent('Cascade Delete Warning')
+    })
+
+    it('shows cascade warning message with node type', () => {
+      render(
+        <DeleteConfirmationDialog
+          {...defaultProps}
+          node={createMockNodeWithChildren()}
+        />
+      )
+
+      expect(screen.getByTestId('cascade-warning-message')).toHaveTextContent(
+        'Deleting this goal will also permanently remove all of its nested content'
+      )
+    })
+
+    it('shows cascade warning note about irreversibility', () => {
+      render(
+        <DeleteConfirmationDialog
+          {...defaultProps}
+          node={createMockNodeWithChildren()}
+        />
+      )
+
+      expect(screen.getByTestId('cascade-warning-note')).toHaveTextContent(
+        'This action cannot be undone. All nested goals, milestones, requirements, and tasks will be permanently deleted.'
+      )
+    })
+
+    it('shows breakdown by type in warning message', () => {
+      // Parent goal with: 1 task child, 1 goal child (with 1 task grandchild)
+      // Total: 1 goal, 2 tasks
+      render(
+        <DeleteConfirmationDialog
+          {...defaultProps}
+          node={createMockNodeWithChildren()}
+        />
+      )
+
+      expect(screen.getByTestId('cascade-warning-message')).toHaveTextContent('1 goal and 2 tasks')
+    })
+
+    it('handles single type correctly', () => {
+      const nodeWithTasksOnly = createMockNode({
+        children: [
+          createMockNode({ id: 2, title: 'Task 1', nodeType: 'task' }),
+          createMockNode({ id: 3, title: 'Task 2', nodeType: 'task' }),
+          createMockNode({ id: 4, title: 'Task 3', nodeType: 'task' }),
+        ],
+      })
+
+      render(<DeleteConfirmationDialog {...defaultProps} node={nodeWithTasksOnly} />)
+
+      expect(screen.getByTestId('cascade-warning-message')).toHaveTextContent('3 tasks (3 items total)')
+    })
+
+    it('uses singular form for single item of a type', () => {
+      const nodeWithOneGoalChild = createMockNode({
+        children: [
+          createMockNode({ id: 2, title: 'Child Goal', nodeType: 'goal' }),
+        ],
+      })
+
+      render(<DeleteConfirmationDialog {...defaultProps} node={nodeWithOneGoalChild} />)
+
+      expect(screen.getByTestId('cascade-warning-message')).toHaveTextContent('1 goal (1 item total)')
+    })
+
+    it('shows warning for milestones with children', () => {
+      const milestone = createMockNode({
+        nodeType: 'milestone',
+        children: [
+          createMockNode({ id: 2, title: 'Task 1', nodeType: 'task' }),
+        ],
+      })
+
+      render(<DeleteConfirmationDialog {...defaultProps} node={milestone} />)
+
+      expect(screen.getByTestId('cascade-warning-message')).toHaveTextContent(
+        'Deleting this milestone will also permanently remove all of its nested content'
+      )
+    })
+
+    it('shows warning with multiple types in correct order', () => {
+      const nodeWithMixedTypes = createMockNode({
+        children: [
+          createMockNode({ id: 2, title: 'Task', nodeType: 'task' }),
+          createMockNode({ id: 3, title: 'Goal', nodeType: 'goal' }),
+          createMockNode({ id: 4, title: 'Milestone', nodeType: 'milestone' }),
+          createMockNode({ id: 5, title: 'Requirement', nodeType: 'requirement' }),
+        ],
+      })
+
+      render(<DeleteConfirmationDialog {...defaultProps} node={nodeWithMixedTypes} />)
+
+      // Order should be: goal, milestone, requirement, task
+      expect(screen.getByTestId('cascade-warning-message')).toHaveTextContent(
+        '1 goal, 1 milestone, 1 requirement, and 1 task'
+      )
     })
   })
 
