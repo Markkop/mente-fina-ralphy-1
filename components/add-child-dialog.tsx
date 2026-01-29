@@ -88,10 +88,10 @@ export interface AddChildDialogProps {
   open: boolean
   /** Callback when open state changes */
   onOpenChange: (open: boolean) => void
-  /** The parent node to add a child to */
+  /** The parent node to add a child to (null = create root goal) */
   parentNode: TreeNodeWithChildren | null
-  /** Callback to add a goal/milestone/requirement */
-  onAddGoal?: (input: { title: string; description?: string; parentId: number }) => Promise<number>
+  /** Callback to add a goal/milestone/requirement (parentId is optional for root goals) */
+  onAddGoal?: (input: { title: string; description?: string; parentId?: number }) => Promise<number>
   /** Callback to add a milestone */
   onAddMilestone?: (input: { title: string; description?: string; parentId: number }) => Promise<number>
   /** Callback to add a requirement */
@@ -121,8 +121,11 @@ export function AddChildDialog({
   onAddRequirement,
   onAddTask,
 }: AddChildDialogProps) {
-  // Form state
-  const [selectedType, setSelectedType] = useState<ChildNodeType>('task')
+  // Determine if we're adding a root goal (no parent)
+  const isRootGoal = parentNode === null
+
+  // Form state - default to 'goal' for root goals, 'task' for children
+  const [selectedType, setSelectedType] = useState<ChildNodeType>(isRootGoal ? 'goal' : 'task')
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [frequency, setFrequency] = useState<TaskFrequency>('once')
@@ -133,22 +136,30 @@ export function AddChildDialog({
   // Reset form when dialog opens/closes
   useEffect(() => {
     if (open) {
-      setSelectedType('task')
+      // Default to 'goal' for root goals, 'task' for children
+      setSelectedType(parentNode === null ? 'goal' : 'task')
       setTitle('')
       setDescription('')
       setFrequency('once')
       setMeasurement('')
       setError(null)
     }
-  }, [open])
+  }, [open, parentNode])
 
   // Handle form submission
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault()
 
-      if (!parentNode?.id) {
+      // For non-root goals, require a parent node
+      if (!isRootGoal && !parentNode?.id) {
         setError('No parent node selected')
+        return
+      }
+
+      // Only allow goals at root level
+      if (isRootGoal && selectedType !== 'goal') {
+        setError('Only goals can be created at root level')
         return
       }
 
@@ -164,7 +175,7 @@ export function AddChildDialog({
         const baseInput = {
           title: title.trim(),
           description: description.trim() || undefined,
-          parentId: parentNode.id,
+          ...(parentNode?.id ? { parentId: parentNode.id } : {}),
         }
 
         switch (selectedType) {
@@ -172,14 +183,15 @@ export function AddChildDialog({
             await onAddGoal?.(baseInput)
             break
           case 'milestone':
-            await onAddMilestone?.(baseInput)
+            await onAddMilestone?.({ ...baseInput, parentId: parentNode!.id })
             break
           case 'requirement':
-            await onAddRequirement?.(baseInput)
+            await onAddRequirement?.({ ...baseInput, parentId: parentNode!.id })
             break
           case 'task':
             await onAddTask?.({
               ...baseInput,
+              parentId: parentNode!.id,
               frequency,
               measurement: measurement.trim() || undefined,
             })
@@ -195,6 +207,7 @@ export function AddChildDialog({
     },
     [
       parentNode,
+      isRootGoal,
       title,
       description,
       selectedType,
@@ -215,56 +228,62 @@ export function AddChildDialog({
       <DialogContent data-testid="add-child-dialog">
         <DialogHeader>
           <DialogTitle data-testid="add-child-dialog-title">
-            Add to &ldquo;{parentNode?.title || 'Node'}&rdquo;
+            {isRootGoal
+              ? 'Create Root Goal'
+              : `Add to "${parentNode?.title || 'Node'}"`}
           </DialogTitle>
           <DialogDescription data-testid="add-child-dialog-description">
-            Create a new item under this {parentNode?.nodeType || 'node'}.
+            {isRootGoal
+              ? 'Create a new top-level goal.'
+              : `Create a new item under this ${parentNode?.nodeType || 'node'}.`}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4" data-testid="add-child-form">
-          {/* Type Selection */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Type</label>
-            <div
-              className="grid grid-cols-2 gap-2"
-              role="radiogroup"
-              aria-label="Select node type"
-              data-testid="type-selector"
-            >
-              {(Object.keys(NODE_TYPE_CONFIG) as ChildNodeType[]).map((type) => {
-                const config = NODE_TYPE_CONFIG[type]
-                const Icon = config.icon
-                const isSelected = selectedType === type
+          {/* Type Selection - only show goal option for root goals */}
+          {!isRootGoal && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Type</label>
+              <div
+                className="grid grid-cols-2 gap-2"
+                role="radiogroup"
+                aria-label="Select node type"
+                data-testid="type-selector"
+              >
+                {(Object.keys(NODE_TYPE_CONFIG) as ChildNodeType[]).map((type) => {
+                  const config = NODE_TYPE_CONFIG[type]
+                  const Icon = config.icon
+                  const isSelected = selectedType === type
 
-                return (
-                  <button
-                    key={type}
-                    type="button"
-                    role="radio"
-                    aria-checked={isSelected}
-                    className={cn(
-                      'flex items-center gap-2 rounded-lg border p-3 text-left transition-all',
-                      'hover:border-primary/50',
-                      isSelected
-                        ? cn(config.bgColor, 'ring-2 ring-primary ring-offset-1')
-                        : 'bg-background border-border'
-                    )}
-                    onClick={() => setSelectedType(type)}
-                    data-testid={`type-option-${type}`}
-                  >
-                    <Icon className={cn('h-4 w-4', config.color)} />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium">{config.label}</div>
-                      <div className="text-xs text-muted-foreground truncate">
-                        {config.description}
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      role="radio"
+                      aria-checked={isSelected}
+                      className={cn(
+                        'flex items-center gap-2 rounded-lg border p-3 text-left transition-all',
+                        'hover:border-primary/50',
+                        isSelected
+                          ? cn(config.bgColor, 'ring-2 ring-primary ring-offset-1')
+                          : 'bg-background border-border'
+                      )}
+                      onClick={() => setSelectedType(type)}
+                      data-testid={`type-option-${type}`}
+                    >
+                      <Icon className={cn('h-4 w-4', config.color)} />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium">{config.label}</div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {config.description}
+                        </div>
                       </div>
-                    </div>
-                  </button>
-                )
-              })}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Title Input */}
           <div className="space-y-2">

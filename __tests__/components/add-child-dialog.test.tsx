@@ -348,17 +348,6 @@ describe('AddChildDialog', () => {
   })
 
   describe('error handling', () => {
-    it('shows error when no parent node is provided', async () => {
-      render(<AddChildDialog {...defaultProps} parentNode={null} />)
-
-      fireEvent.change(screen.getByTestId('title-input'), { target: { value: 'My Task' } })
-      fireEvent.click(screen.getByTestId('submit-button'))
-
-      await waitFor(() => {
-        expect(screen.getByTestId('add-child-error')).toHaveTextContent('No parent node selected')
-      })
-    })
-
     it('shows error when title is only whitespace', async () => {
       render(<AddChildDialog {...defaultProps} />)
 
@@ -369,6 +358,129 @@ describe('AddChildDialog', () => {
       
       // Button should be disabled since title is effectively empty after trim
       expect(screen.getByTestId('submit-button')).toBeDisabled()
+    })
+  })
+
+  describe('root goal mode (parentNode = null)', () => {
+    it('shows "Create Root Goal" title when parentNode is null', () => {
+      render(<AddChildDialog {...defaultProps} parentNode={null} />)
+
+      expect(screen.getByTestId('add-child-dialog-title')).toHaveTextContent('Create Root Goal')
+    })
+
+    it('shows appropriate description for root goal', () => {
+      render(<AddChildDialog {...defaultProps} parentNode={null} />)
+
+      expect(screen.getByTestId('add-child-dialog-description')).toHaveTextContent('Create a new top-level goal.')
+    })
+
+    it('hides the type selector when parentNode is null', () => {
+      render(<AddChildDialog {...defaultProps} parentNode={null} />)
+
+      expect(screen.queryByTestId('type-selector')).not.toBeInTheDocument()
+    })
+
+    it('defaults to goal type for root goals', () => {
+      render(<AddChildDialog {...defaultProps} parentNode={null} />)
+
+      // Submit button should show "Add Goal"
+      expect(screen.getByTestId('submit-button')).toHaveTextContent('Add Goal')
+    })
+
+    it('hides task-specific fields for root goals', () => {
+      render(<AddChildDialog {...defaultProps} parentNode={null} />)
+
+      expect(screen.queryByTestId('frequency-selector')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('measurement-input')).not.toBeInTheDocument()
+    })
+
+    it('calls onAddGoal without parentId when submitting a root goal', async () => {
+      render(<AddChildDialog {...defaultProps} parentNode={null} />)
+
+      fireEvent.change(screen.getByTestId('title-input'), { target: { value: 'My Root Goal' } })
+      fireEvent.change(screen.getByTestId('description-input'), { target: { value: 'Root goal description' } })
+      fireEvent.click(screen.getByTestId('submit-button'))
+
+      await waitFor(() => {
+        expect(mockOnAddGoal).toHaveBeenCalledWith({
+          title: 'My Root Goal',
+          description: 'Root goal description',
+        })
+      })
+      // Verify parentId is NOT included in the call
+      expect(mockOnAddGoal).not.toHaveBeenCalledWith(
+        expect.objectContaining({ parentId: expect.anything() })
+      )
+    })
+
+    it('calls onAddGoal with parentId undefined for root goal', async () => {
+      render(<AddChildDialog {...defaultProps} parentNode={null} />)
+
+      fireEvent.change(screen.getByTestId('title-input'), { target: { value: 'My Root Goal' } })
+      fireEvent.click(screen.getByTestId('submit-button'))
+
+      await waitFor(() => {
+        expect(mockOnAddGoal).toHaveBeenCalled()
+        const calledWith = mockOnAddGoal.mock.calls[0][0]
+        expect(calledWith.title).toBe('My Root Goal')
+        expect(calledWith).not.toHaveProperty('parentId')
+      })
+    })
+
+    it('closes dialog after successful root goal submission', async () => {
+      render(<AddChildDialog {...defaultProps} parentNode={null} />)
+
+      fireEvent.change(screen.getByTestId('title-input'), { target: { value: 'My Root Goal' } })
+      fireEvent.click(screen.getByTestId('submit-button'))
+
+      await waitFor(() => {
+        expect(mockOnOpenChange).toHaveBeenCalledWith(false)
+      })
+    })
+
+    it('shows loading state while submitting root goal', async () => {
+      mockOnAddGoal.mockImplementation(
+        () => new Promise((resolve) => setTimeout(() => resolve(1), 100))
+      )
+
+      render(<AddChildDialog {...defaultProps} parentNode={null} />)
+
+      fireEvent.change(screen.getByTestId('title-input'), { target: { value: 'My Root Goal' } })
+      fireEvent.click(screen.getByTestId('submit-button'))
+
+      expect(screen.getByTestId('submit-button')).toHaveTextContent('Adding...')
+      expect(screen.getByTestId('submit-button')).toBeDisabled()
+
+      await waitFor(() => {
+        expect(mockOnOpenChange).toHaveBeenCalledWith(false)
+      })
+    })
+
+    it('shows error message on root goal submission failure', async () => {
+      mockOnAddGoal.mockRejectedValue(new Error('Failed to create root goal'))
+
+      render(<AddChildDialog {...defaultProps} parentNode={null} />)
+
+      fireEvent.change(screen.getByTestId('title-input'), { target: { value: 'My Root Goal' } })
+      fireEvent.click(screen.getByTestId('submit-button'))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('add-child-error')).toHaveTextContent('Failed to create root goal')
+      })
+    })
+
+    it('resets to goal type when reopening in root mode', () => {
+      const { rerender } = render(<AddChildDialog {...defaultProps} />)
+
+      // Change type to milestone when in child mode
+      fireEvent.click(screen.getByTestId('type-option-milestone'))
+
+      // Close and reopen in root mode
+      rerender(<AddChildDialog {...defaultProps} open={false} parentNode={null} />)
+      rerender(<AddChildDialog {...defaultProps} open={true} parentNode={null} />)
+
+      // Should show "Add Goal" since type selector is hidden and defaults to goal
+      expect(screen.getByTestId('submit-button')).toHaveTextContent('Add Goal')
     })
   })
 
