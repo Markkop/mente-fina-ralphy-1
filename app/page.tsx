@@ -2,10 +2,10 @@
 
 import { AppLayout } from '@/components/app-layout'
 import { SettingsModal } from '@/components/settings-modal'
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useGoalStore } from '@/lib/goal-store'
+import { useGoalTree } from '@/lib/hooks'
 
 // Disable static generation since we use IndexedDB (client-side only)
 export const dynamic = 'force-dynamic'
@@ -13,7 +13,25 @@ export const dynamic = 'force-dynamic'
 export default function Home() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   
-  const { addGoal, addMilestone, addRequirement, addTask, deleteNode } = useGoalStore()
+  const {
+    addGoal,
+    addMilestone,
+    addRequirement,
+    addTask,
+    deleteGoal,
+    deleteTask,
+  } = useGoalTree()
+
+  // Wrapper to handle delete based on node type
+  const handleDelete = useCallback(
+    async (id: number, nodeType: 'goal' | 'task'): Promise<number> => {
+      if (nodeType === 'task') {
+        return deleteTask(id)
+      }
+      return deleteGoal(id)
+    },
+    [deleteGoal, deleteTask]
+  )
 
   return (
     <>
@@ -38,7 +56,7 @@ export default function Home() {
           onAddTask: addTask,
         }}
         deleteConfirmationDialogProps={{
-          onDelete: deleteNode,
+          onDelete: handleDelete,
         }}
       />
       <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
