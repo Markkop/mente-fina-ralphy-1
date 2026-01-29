@@ -1,9 +1,27 @@
 'use client'
 
 import { useMemo } from 'react'
-import { Briefcase, Moon } from 'lucide-react'
+import { Briefcase, Moon, CheckSquare, Square } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { SettingsData } from '@/lib/hooks'
+
+/**
+ * Scheduled task to render on the grid
+ */
+export interface ScheduledTask {
+  /** Task ID */
+  id: number
+  /** Task title */
+  title: string
+  /** Scheduled hour (0-23) */
+  hour: number
+  /** Scheduled minute (0-59) */
+  minute: number
+  /** Whether the task is completed */
+  isCompleted: boolean
+  /** Duration in minutes (default: 30) */
+  duration?: number
+}
 
 /**
  * Props for the TimeSlot component
@@ -17,6 +35,12 @@ export interface TimeSlotProps {
   showLabels?: boolean
   /** Whether to use compact mode (smaller blocks) */
   compact?: boolean
+  /** Scheduled tasks to render on the grid */
+  scheduledTasks?: ScheduledTask[]
+  /** Callback when a scheduled task is clicked */
+  onTaskClick?: (taskId: number) => void
+  /** Callback when a scheduled task's completion is toggled */
+  onTaskToggle?: (taskId: number) => void
 }
 
 /**
@@ -190,19 +214,44 @@ export function generateTimeBlocks(settings: SettingsData): TimeBlock[] {
 const HOUR_MARKERS = [0, 6, 12, 18] as const
 
 /**
- * TimeSlot Component - Visualizes work and sleep time blocks
+ * Calculates the position and height for a scheduled task block
+ */
+export function calculateTaskPosition(
+  hour: number,
+  minute: number,
+  duration: number = 30
+): { topPercent: number; heightPercent: number } {
+  const topPercent = timeToPercent(hour, minute)
+  const heightPercent = (duration / (24 * 60)) * 100
+  return { topPercent, heightPercent }
+}
+
+/**
+ * TimeSlot Component - Visualizes work and sleep time blocks with scheduled tasks
  *
  * This component renders a visual representation of work hours and sleep hours
  * as colored blocks on a 24-hour timeline. It's designed to be used in the
  * WeeklyView to show when the user is unavailable for scheduling tasks.
+ * Scheduled tasks are rendered on top of the grid at their scheduled times.
  */
 export function TimeSlot({
   settings,
   className,
   showLabels = true,
   compact = false,
+  scheduledTasks = [],
+  onTaskClick,
+  onTaskToggle,
 }: TimeSlotProps) {
   const blocks = useMemo(() => generateTimeBlocks(settings), [settings])
+
+  // Calculate task positions
+  const taskBlocks = useMemo(() => {
+    return scheduledTasks.map((task) => ({
+      ...task,
+      ...calculateTaskPosition(task.hour, task.minute, task.duration),
+    }))
+  }, [scheduledTasks])
 
   return (
     <div
@@ -233,7 +282,7 @@ export function TimeSlot({
         ))}
       </div>
 
-      {/* Time blocks */}
+      {/* Time blocks (work/sleep) */}
       {blocks.map((block, index) => (
         <div
           key={`${block.type}-${index}`}
@@ -274,6 +323,72 @@ export function TimeSlot({
               </span>
             </div>
           )}
+        </div>
+      ))}
+
+      {/* Scheduled Tasks */}
+      {taskBlocks.map((task) => (
+        <div
+          key={`task-${task.id}`}
+          className={cn(
+            'absolute left-1 right-1 rounded-sm flex items-center gap-1 px-1 cursor-pointer transition-colors z-10',
+            task.isCompleted
+              ? 'bg-green-500/30 border border-green-500/50 hover:bg-green-500/40'
+              : 'bg-amber-500/30 border border-amber-500/50 hover:bg-amber-500/40'
+          )}
+          style={{
+            top: `${task.topPercent}%`,
+            height: `${Math.max(task.heightPercent, compact ? 8 : 4)}%`,
+            minHeight: compact ? '12px' : '16px',
+          }}
+          data-testid={`time-slot-task-${task.id}`}
+          role="button"
+          tabIndex={0}
+          aria-label={`${task.title} at ${task.hour.toString().padStart(2, '0')}:${task.minute.toString().padStart(2, '0')}${task.isCompleted ? ' (completed)' : ''}`}
+          onClick={() => onTaskClick?.(task.id)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              onTaskClick?.(task.id)
+            }
+          }}
+        >
+          {/* Checkbox */}
+          {onTaskToggle && (
+            <button
+              type="button"
+              className={cn(
+                'flex-shrink-0 flex items-center justify-center transition-colors',
+                task.isCompleted
+                  ? 'text-green-600'
+                  : 'text-amber-600 hover:text-amber-700'
+              )}
+              onClick={(e) => {
+                e.stopPropagation()
+                onTaskToggle(task.id)
+              }}
+              aria-label={task.isCompleted ? 'Mark as incomplete' : 'Mark as complete'}
+              data-testid={`time-slot-task-checkbox-${task.id}`}
+            >
+              {task.isCompleted ? (
+                <CheckSquare className={cn(compact ? 'h-2.5 w-2.5' : 'h-3 w-3')} />
+              ) : (
+                <Square className={cn(compact ? 'h-2.5 w-2.5' : 'h-3 w-3')} />
+              )}
+            </button>
+          )}
+
+          {/* Task Title */}
+          <span
+            className={cn(
+              'flex-1 truncate',
+              compact ? 'text-[8px]' : 'text-[10px]',
+              task.isCompleted ? 'text-green-700 line-through' : 'text-amber-700'
+            )}
+            data-testid={`time-slot-task-title-${task.id}`}
+          >
+            {task.title}
+          </span>
         </div>
       ))}
     </div>

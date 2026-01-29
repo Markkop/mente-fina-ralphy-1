@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, vi } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import {
   TimeSlot,
   TimeSlotLegend,
@@ -7,6 +8,8 @@ import {
   timeToPercent,
   calculateBlockHeight,
   generateTimeBlocks,
+  calculateTaskPosition,
+  type ScheduledTask,
 } from '@/components/time-slot'
 import { DEFAULT_SETTINGS } from '@/lib/hooks'
 
@@ -367,5 +370,318 @@ describe('TimeSlot with custom settings', () => {
     const workBlock = screen.getByTestId('time-slot-block-work')
     // 14:00 = 14/24 * 100 = 58.33%
     expect(workBlock).toHaveStyle({ top: '58.333333333333336%' })
+  })
+})
+
+describe('calculateTaskPosition', () => {
+  it('calculates position for morning task', () => {
+    const { topPercent, heightPercent } = calculateTaskPosition(9, 0, 30)
+    // 9am = 9/24 * 100 = 37.5%
+    expect(topPercent).toBe(37.5)
+    // 30 minutes = 30 / (24 * 60) * 100 = 2.083...%
+    expect(heightPercent).toBeCloseTo(2.083, 2)
+  })
+
+  it('calculates position for afternoon task', () => {
+    const { topPercent, heightPercent } = calculateTaskPosition(14, 30, 60)
+    // 14:30 = (14 * 60 + 30) / (24 * 60) * 100 = 60.416...%
+    expect(topPercent).toBeCloseTo(60.416, 2)
+    // 60 minutes = 60 / (24 * 60) * 100 = 4.166...%
+    expect(heightPercent).toBeCloseTo(4.166, 2)
+  })
+
+  it('uses default duration of 30 minutes', () => {
+    const { heightPercent } = calculateTaskPosition(10, 0)
+    expect(heightPercent).toBeCloseTo(2.083, 2)
+  })
+})
+
+describe('TimeSlot with scheduled tasks', () => {
+  const defaultSettings = DEFAULT_SETTINGS
+
+  const createMockScheduledTask = (overrides: Partial<ScheduledTask> = {}): ScheduledTask => ({
+    id: 1,
+    title: 'Test Task',
+    hour: 10,
+    minute: 0,
+    isCompleted: false,
+    duration: 30,
+    ...overrides,
+  })
+
+  describe('rendering scheduled tasks', () => {
+    it('renders a scheduled task on the grid', () => {
+      const tasks = [createMockScheduledTask()]
+
+      render(<TimeSlot settings={defaultSettings} scheduledTasks={tasks} />)
+
+      expect(screen.getByTestId('time-slot-task-1')).toBeInTheDocument()
+    })
+
+    it('renders multiple scheduled tasks', () => {
+      const tasks = [
+        createMockScheduledTask({ id: 1, hour: 10 }),
+        createMockScheduledTask({ id: 2, hour: 14, title: 'Afternoon Task' }),
+        createMockScheduledTask({ id: 3, hour: 16, title: 'Evening Task' }),
+      ]
+
+      render(<TimeSlot settings={defaultSettings} scheduledTasks={tasks} />)
+
+      expect(screen.getByTestId('time-slot-task-1')).toBeInTheDocument()
+      expect(screen.getByTestId('time-slot-task-2')).toBeInTheDocument()
+      expect(screen.getByTestId('time-slot-task-3')).toBeInTheDocument()
+    })
+
+    it('displays task title', () => {
+      const tasks = [createMockScheduledTask({ title: 'My Important Task' })]
+
+      render(<TimeSlot settings={defaultSettings} scheduledTasks={tasks} />)
+
+      expect(screen.getByTestId('time-slot-task-title-1')).toHaveTextContent('My Important Task')
+    })
+
+    it('renders task at correct position', () => {
+      const tasks = [createMockScheduledTask({ hour: 12, minute: 0 })]
+
+      render(<TimeSlot settings={defaultSettings} scheduledTasks={tasks} />)
+
+      const taskElement = screen.getByTestId('time-slot-task-1')
+      // Noon = 50%
+      expect(taskElement).toHaveStyle({ top: '50%' })
+    })
+
+    it('renders completed task with different styling', () => {
+      const tasks = [createMockScheduledTask({ isCompleted: true })]
+
+      render(<TimeSlot settings={defaultSettings} scheduledTasks={tasks} />)
+
+      const taskElement = screen.getByTestId('time-slot-task-1')
+      expect(taskElement).toHaveClass('bg-green-500/30')
+    })
+
+    it('renders incomplete task with amber styling', () => {
+      const tasks = [createMockScheduledTask({ isCompleted: false })]
+
+      render(<TimeSlot settings={defaultSettings} scheduledTasks={tasks} />)
+
+      const taskElement = screen.getByTestId('time-slot-task-1')
+      expect(taskElement).toHaveClass('bg-amber-500/30')
+    })
+
+    it('renders empty when no scheduled tasks provided', () => {
+      render(<TimeSlot settings={defaultSettings} scheduledTasks={[]} />)
+
+      expect(screen.queryByTestId('time-slot-task-1')).not.toBeInTheDocument()
+    })
+
+    it('renders empty when scheduledTasks prop is undefined', () => {
+      render(<TimeSlot settings={defaultSettings} />)
+
+      expect(screen.queryByTestId('time-slot-task-1')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('task interactions', () => {
+    it('calls onTaskClick when task is clicked', async () => {
+      const onTaskClick = vi.fn()
+      const tasks = [createMockScheduledTask()]
+
+      render(
+        <TimeSlot
+          settings={defaultSettings}
+          scheduledTasks={tasks}
+          onTaskClick={onTaskClick}
+        />
+      )
+
+      await userEvent.click(screen.getByTestId('time-slot-task-1'))
+
+      expect(onTaskClick).toHaveBeenCalledWith(1)
+    })
+
+    it('calls onTaskClick when Enter key is pressed', () => {
+      const onTaskClick = vi.fn()
+      const tasks = [createMockScheduledTask()]
+
+      render(
+        <TimeSlot
+          settings={defaultSettings}
+          scheduledTasks={tasks}
+          onTaskClick={onTaskClick}
+        />
+      )
+
+      const taskElement = screen.getByTestId('time-slot-task-1')
+      fireEvent.keyDown(taskElement, { key: 'Enter' })
+
+      expect(onTaskClick).toHaveBeenCalledWith(1)
+    })
+
+    it('calls onTaskClick when Space key is pressed', () => {
+      const onTaskClick = vi.fn()
+      const tasks = [createMockScheduledTask()]
+
+      render(
+        <TimeSlot
+          settings={defaultSettings}
+          scheduledTasks={tasks}
+          onTaskClick={onTaskClick}
+        />
+      )
+
+      const taskElement = screen.getByTestId('time-slot-task-1')
+      fireEvent.keyDown(taskElement, { key: ' ' })
+
+      expect(onTaskClick).toHaveBeenCalledWith(1)
+    })
+
+    it('renders checkbox when onTaskToggle is provided', () => {
+      const onTaskToggle = vi.fn()
+      const tasks = [createMockScheduledTask()]
+
+      render(
+        <TimeSlot
+          settings={defaultSettings}
+          scheduledTasks={tasks}
+          onTaskToggle={onTaskToggle}
+        />
+      )
+
+      expect(screen.getByTestId('time-slot-task-checkbox-1')).toBeInTheDocument()
+    })
+
+    it('does not render checkbox when onTaskToggle is not provided', () => {
+      const tasks = [createMockScheduledTask()]
+
+      render(<TimeSlot settings={defaultSettings} scheduledTasks={tasks} />)
+
+      expect(screen.queryByTestId('time-slot-task-checkbox-1')).not.toBeInTheDocument()
+    })
+
+    it('calls onTaskToggle when checkbox is clicked', async () => {
+      const onTaskToggle = vi.fn()
+      const tasks = [createMockScheduledTask()]
+
+      render(
+        <TimeSlot
+          settings={defaultSettings}
+          scheduledTasks={tasks}
+          onTaskToggle={onTaskToggle}
+        />
+      )
+
+      await userEvent.click(screen.getByTestId('time-slot-task-checkbox-1'))
+
+      expect(onTaskToggle).toHaveBeenCalledWith(1)
+    })
+
+    it('checkbox click does not trigger onTaskClick', async () => {
+      const onTaskClick = vi.fn()
+      const onTaskToggle = vi.fn()
+      const tasks = [createMockScheduledTask()]
+
+      render(
+        <TimeSlot
+          settings={defaultSettings}
+          scheduledTasks={tasks}
+          onTaskClick={onTaskClick}
+          onTaskToggle={onTaskToggle}
+        />
+      )
+
+      await userEvent.click(screen.getByTestId('time-slot-task-checkbox-1'))
+
+      expect(onTaskToggle).toHaveBeenCalledWith(1)
+      expect(onTaskClick).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('accessibility', () => {
+    it('has correct aria-label on task', () => {
+      const tasks = [createMockScheduledTask({ title: 'Review PRs', hour: 14, minute: 30 })]
+
+      render(<TimeSlot settings={defaultSettings} scheduledTasks={tasks} />)
+
+      const taskElement = screen.getByTestId('time-slot-task-1')
+      expect(taskElement).toHaveAttribute('aria-label', 'Review PRs at 14:30')
+    })
+
+    it('indicates completed status in aria-label', () => {
+      const tasks = [createMockScheduledTask({ title: 'Done Task', isCompleted: true })]
+
+      render(<TimeSlot settings={defaultSettings} scheduledTasks={tasks} />)
+
+      const taskElement = screen.getByTestId('time-slot-task-1')
+      expect(taskElement).toHaveAttribute('aria-label', 'Done Task at 10:00 (completed)')
+    })
+
+    it('has correct role on task', () => {
+      const tasks = [createMockScheduledTask()]
+
+      render(<TimeSlot settings={defaultSettings} scheduledTasks={tasks} />)
+
+      expect(screen.getByTestId('time-slot-task-1')).toHaveAttribute('role', 'button')
+    })
+
+    it('is focusable via tabIndex', () => {
+      const tasks = [createMockScheduledTask()]
+
+      render(<TimeSlot settings={defaultSettings} scheduledTasks={tasks} />)
+
+      expect(screen.getByTestId('time-slot-task-1')).toHaveAttribute('tabIndex', '0')
+    })
+
+    it('checkbox has correct aria-label for incomplete task', () => {
+      const tasks = [createMockScheduledTask({ isCompleted: false })]
+
+      render(
+        <TimeSlot
+          settings={defaultSettings}
+          scheduledTasks={tasks}
+          onTaskToggle={vi.fn()}
+        />
+      )
+
+      expect(screen.getByTestId('time-slot-task-checkbox-1')).toHaveAttribute(
+        'aria-label',
+        'Mark as complete'
+      )
+    })
+
+    it('checkbox has correct aria-label for completed task', () => {
+      const tasks = [createMockScheduledTask({ isCompleted: true })]
+
+      render(
+        <TimeSlot
+          settings={defaultSettings}
+          scheduledTasks={tasks}
+          onTaskToggle={vi.fn()}
+        />
+      )
+
+      expect(screen.getByTestId('time-slot-task-checkbox-1')).toHaveAttribute(
+        'aria-label',
+        'Mark as incomplete'
+      )
+    })
+  })
+
+  describe('styling in compact mode', () => {
+    it('renders tasks in compact mode', () => {
+      const tasks = [createMockScheduledTask()]
+
+      render(<TimeSlot settings={defaultSettings} scheduledTasks={tasks} compact />)
+
+      expect(screen.getByTestId('time-slot-task-1')).toBeInTheDocument()
+    })
+
+    it('applies smaller text in compact mode', () => {
+      const tasks = [createMockScheduledTask()]
+
+      render(<TimeSlot settings={defaultSettings} scheduledTasks={tasks} compact />)
+
+      const titleElement = screen.getByTestId('time-slot-task-title-1')
+      expect(titleElement).toHaveClass('text-[8px]')
+    })
   })
 })

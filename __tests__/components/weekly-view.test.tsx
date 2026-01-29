@@ -975,4 +975,265 @@ describe('WeeklyView', () => {
       expect(firstDayTimeSlot.querySelector('[data-testid="time-slot"]')).toBeInTheDocument()
     })
   })
+
+  describe('scheduled tasks on time slot grid', () => {
+    it('renders scheduled daily task on the time slot grid', () => {
+      // Create a task scheduled for 10:00 AM
+      const scheduledDate = new Date()
+      scheduledDate.setHours(10, 0, 0, 0)
+
+      const scheduledTask = createMockTask({
+        id: 1,
+        title: 'Scheduled Daily Task',
+        frequency: 'daily',
+        scheduledDate,
+      })
+
+      mockUseTasks.mockReturnValue({
+        allTasks: [scheduledTask],
+        completedTasks: [],
+        pendingTasks: [scheduledTask],
+        tasksByFrequency: { once: [], daily: [scheduledTask], weekly: [], custom: [] },
+        dailyTasks: [scheduledTask],
+        weeklyTasks: [],
+        oneTimeTasks: [],
+        customTasks: [],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+        getTaskById: vi.fn(),
+        getTasksForParent: vi.fn(),
+        initialize: vi.fn(),
+        refresh: vi.fn(),
+        addTask: vi.fn(),
+        updateTask: vi.fn(),
+        toggleTaskCompletion: vi.fn(),
+        deleteTask: vi.fn(),
+        moveTask: vi.fn(),
+        reorderTasks: vi.fn(),
+      })
+
+      render(<WeeklyView />)
+
+      // The scheduled task should appear on the time slot grid for each day
+      // (since it's a daily task)
+      const timeSlotTask = screen.getAllByTestId('time-slot-task-1')
+      expect(timeSlotTask.length).toBe(7) // One for each day
+    })
+
+    it('renders scheduled one-time task only on its scheduled day', () => {
+      const monday = getMonday(new Date())
+      const scheduledDate = new Date(monday)
+      scheduledDate.setDate(monday.getDate() + 2) // Wednesday
+      scheduledDate.setHours(14, 30, 0, 0) // 2:30 PM
+
+      const scheduledTask = createMockTask({
+        id: 5,
+        title: 'One-time Scheduled Task',
+        frequency: 'once',
+        scheduledDate,
+      })
+
+      mockUseTasks.mockReturnValue({
+        allTasks: [scheduledTask],
+        completedTasks: [],
+        pendingTasks: [scheduledTask],
+        tasksByFrequency: { once: [scheduledTask], daily: [], weekly: [], custom: [] },
+        dailyTasks: [],
+        weeklyTasks: [],
+        oneTimeTasks: [scheduledTask],
+        customTasks: [],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+        getTaskById: vi.fn(),
+        getTasksForParent: vi.fn(),
+        initialize: vi.fn(),
+        refresh: vi.fn(),
+        addTask: vi.fn(),
+        updateTask: vi.fn(),
+        toggleTaskCompletion: vi.fn(),
+        deleteTask: vi.fn(),
+        moveTask: vi.fn(),
+        reorderTasks: vi.fn(),
+      })
+
+      render(<WeeklyView />)
+
+      // The scheduled task should appear only once (on Wednesday)
+      const timeSlotTask = screen.getAllByTestId('time-slot-task-5')
+      expect(timeSlotTask.length).toBe(1)
+    })
+
+    it('renders scheduled weekly task only on its scheduled days', () => {
+      const scheduledDate = new Date()
+      scheduledDate.setHours(9, 0, 0, 0)
+
+      const scheduledTask = createMockTask({
+        id: 6,
+        title: 'Weekly Scheduled Task',
+        frequency: 'weekly',
+        weeklyDays: [1, 3, 5], // Monday, Wednesday, Friday
+        scheduledDate,
+      })
+
+      mockUseTasks.mockReturnValue({
+        allTasks: [scheduledTask],
+        completedTasks: [],
+        pendingTasks: [scheduledTask],
+        tasksByFrequency: { once: [], daily: [], weekly: [scheduledTask], custom: [] },
+        dailyTasks: [],
+        weeklyTasks: [scheduledTask],
+        oneTimeTasks: [],
+        customTasks: [],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+        getTaskById: vi.fn(),
+        getTasksForParent: vi.fn(),
+        initialize: vi.fn(),
+        refresh: vi.fn(),
+        addTask: vi.fn(),
+        updateTask: vi.fn(),
+        toggleTaskCompletion: vi.fn(),
+        deleteTask: vi.fn(),
+        moveTask: vi.fn(),
+        reorderTasks: vi.fn(),
+      })
+
+      render(<WeeklyView />)
+
+      // The scheduled task should appear 3 times (Mon, Wed, Fri)
+      const timeSlotTask = screen.getAllByTestId('time-slot-task-6')
+      expect(timeSlotTask.length).toBe(3)
+    })
+
+    it('does not render task without scheduledDate on the time slot grid', () => {
+      const taskWithoutSchedule = createMockTask({
+        id: 7,
+        title: 'Unscheduled Task',
+        frequency: 'daily',
+        scheduledDate: undefined,
+      })
+
+      mockUseTasks.mockReturnValue({
+        allTasks: [taskWithoutSchedule],
+        completedTasks: [],
+        pendingTasks: [taskWithoutSchedule],
+        tasksByFrequency: { once: [], daily: [taskWithoutSchedule], weekly: [], custom: [] },
+        dailyTasks: [taskWithoutSchedule],
+        weeklyTasks: [],
+        oneTimeTasks: [],
+        customTasks: [],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+        getTaskById: vi.fn(),
+        getTasksForParent: vi.fn(),
+        initialize: vi.fn(),
+        refresh: vi.fn(),
+        addTask: vi.fn(),
+        updateTask: vi.fn(),
+        toggleTaskCompletion: vi.fn(),
+        deleteTask: vi.fn(),
+        moveTask: vi.fn(),
+        reorderTasks: vi.fn(),
+      })
+
+      render(<WeeklyView />)
+
+      // The task should appear in the task list but not on the time slot grid
+      expect(screen.queryByTestId('time-slot-task-7')).not.toBeInTheDocument()
+      // But it should still appear in the regular task list
+      expect(screen.getAllByTestId('weekly-task-7').length).toBe(7)
+    })
+
+    it('calls onTaskClick when scheduled task is clicked on grid', async () => {
+      const onTaskClick = vi.fn()
+      const scheduledDate = new Date()
+      scheduledDate.setHours(10, 0, 0, 0)
+
+      const scheduledTask = createMockTask({
+        id: 8,
+        title: 'Clickable Scheduled Task',
+        frequency: 'daily',
+        scheduledDate,
+      })
+
+      mockUseTasks.mockReturnValue({
+        allTasks: [scheduledTask],
+        completedTasks: [],
+        pendingTasks: [scheduledTask],
+        tasksByFrequency: { once: [], daily: [scheduledTask], weekly: [], custom: [] },
+        dailyTasks: [scheduledTask],
+        weeklyTasks: [],
+        oneTimeTasks: [],
+        customTasks: [],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+        getTaskById: vi.fn(),
+        getTasksForParent: vi.fn(),
+        initialize: vi.fn(),
+        refresh: vi.fn(),
+        addTask: vi.fn(),
+        updateTask: vi.fn(),
+        toggleTaskCompletion: vi.fn(),
+        deleteTask: vi.fn(),
+        moveTask: vi.fn(),
+        reorderTasks: vi.fn(),
+      })
+
+      render(<WeeklyView onTaskClick={onTaskClick} />)
+
+      const timeSlotTasks = screen.getAllByTestId('time-slot-task-8')
+      await userEvent.click(timeSlotTasks[0])
+
+      expect(onTaskClick).toHaveBeenCalledWith(scheduledTask)
+    })
+
+    it('toggles task completion when checkbox is clicked on grid', async () => {
+      const toggleTaskCompletion = vi.fn()
+      const scheduledDate = new Date()
+      scheduledDate.setHours(10, 0, 0, 0)
+
+      const scheduledTask = createMockTask({
+        id: 9,
+        title: 'Toggleable Scheduled Task',
+        frequency: 'daily',
+        scheduledDate,
+      })
+
+      mockUseTasks.mockReturnValue({
+        allTasks: [scheduledTask],
+        completedTasks: [],
+        pendingTasks: [scheduledTask],
+        tasksByFrequency: { once: [], daily: [scheduledTask], weekly: [], custom: [] },
+        dailyTasks: [scheduledTask],
+        weeklyTasks: [],
+        oneTimeTasks: [],
+        customTasks: [],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+        getTaskById: vi.fn(),
+        getTasksForParent: vi.fn(),
+        initialize: vi.fn(),
+        refresh: vi.fn(),
+        addTask: vi.fn(),
+        updateTask: vi.fn(),
+        toggleTaskCompletion,
+        deleteTask: vi.fn(),
+        moveTask: vi.fn(),
+        reorderTasks: vi.fn(),
+      })
+
+      render(<WeeklyView />)
+
+      const checkboxes = screen.getAllByTestId('time-slot-task-checkbox-9')
+      await userEvent.click(checkboxes[0])
+
+      expect(toggleTaskCompletion).toHaveBeenCalledWith(9)
+    })
+  })
 })

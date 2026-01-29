@@ -12,7 +12,7 @@ import {
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { useTasks, useSettings, type TaskWithMeta, type SettingsData } from '@/lib/hooks'
-import { TimeSlot, TimeSlotLegend } from '@/components/time-slot'
+import { TimeSlot, TimeSlotLegend, type ScheduledTask } from '@/components/time-slot'
 
 /**
  * Props for the WeeklyView component
@@ -142,6 +142,60 @@ function shouldTaskAppearOnDay(task: TaskWithMeta, date: Date): boolean {
 }
 
 /**
+ * Get scheduled tasks for a specific day with their time information
+ * @param tasks - All tasks to filter
+ * @param date - The date to get scheduled tasks for
+ * @returns Array of ScheduledTask objects for the time slot grid
+ */
+function getScheduledTasksForDay(tasks: TaskWithMeta[], date: Date): ScheduledTask[] {
+  return tasks
+    .filter((task) => {
+      // Task must have a scheduled date with time
+      if (!task.scheduledDate) return false
+
+      const scheduledDate = new Date(task.scheduledDate)
+
+      // For one-time tasks, check if the date matches
+      if (task.frequency === 'once') {
+        return (
+          scheduledDate.getDate() === date.getDate() &&
+          scheduledDate.getMonth() === date.getMonth() &&
+          scheduledDate.getFullYear() === date.getFullYear()
+        )
+      }
+
+      // For daily tasks with a scheduled time, show on the day
+      if (task.frequency === 'daily') {
+        return true
+      }
+
+      // For weekly tasks, check if it's scheduled for this day of week
+      if (task.frequency === 'weekly' && task.weeklyDays) {
+        const dayOfWeek = date.getDay()
+        return task.weeklyDays.includes(dayOfWeek)
+      }
+
+      // For custom tasks with a scheduled time
+      if (task.frequency === 'custom') {
+        return true
+      }
+
+      return false
+    })
+    .map((task) => {
+      const scheduledDate = new Date(task.scheduledDate!)
+      return {
+        id: task.id,
+        title: task.title,
+        hour: scheduledDate.getHours(),
+        minute: scheduledDate.getMinutes(),
+        isCompleted: task.isCompleted,
+        duration: 30, // Default 30-minute duration
+      }
+    })
+}
+
+/**
  * WeeklyView Component - A CSS Grid based 7-column layout for viewing tasks by week
  *
  * This component provides a weekly calendar view where tasks are displayed
@@ -195,6 +249,17 @@ export function WeeklyView({
           grouped.get(i)!.push(task)
         }
       }
+    }
+
+    return grouped
+  }, [allTasks, weekDates])
+
+  // Get scheduled tasks for time slot grid by day
+  const scheduledTasksByDay = useMemo(() => {
+    const grouped: Map<number, ScheduledTask[]> = new Map()
+
+    for (let i = 0; i < 7; i++) {
+      grouped.set(i, getScheduledTasksForDay(allTasks, weekDates[i]))
     }
 
     return grouped
@@ -356,6 +421,12 @@ export function WeeklyView({
                     settings={settings}
                     compact
                     showLabels={false}
+                    scheduledTasks={scheduledTasksByDay.get(index) || []}
+                    onTaskClick={(taskId) => {
+                      const task = allTasks.find((t) => t.id === taskId)
+                      if (task) handleTaskClick(task)
+                    }}
+                    onTaskToggle={(taskId) => handleToggleTask(taskId, { stopPropagation: () => {} } as React.MouseEvent)}
                   />
                 </div>
               )}
