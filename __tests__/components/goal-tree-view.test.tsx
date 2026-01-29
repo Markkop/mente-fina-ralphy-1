@@ -238,6 +238,53 @@ describe('GoalTreeView', () => {
 
       expect(onNewGoal).toHaveBeenCalledTimes(1)
     })
+
+    it('shows New Goal button in empty state when onCreateRootGoal is provided', () => {
+      mockHookState = {
+        rootGoals: [],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<GoalTreeView onCreateRootGoal={() => {}} />)
+
+      expect(screen.getByTestId('goal-tree-view-empty-new-goal')).toBeInTheDocument()
+    })
+
+    it('calls onCreateRootGoal when New Goal button is clicked in empty state', () => {
+      const onCreateRootGoal = vi.fn()
+      mockHookState = {
+        rootGoals: [],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<GoalTreeView onCreateRootGoal={onCreateRootGoal} />)
+
+      fireEvent.click(screen.getByTestId('goal-tree-view-empty-new-goal'))
+
+      expect(onCreateRootGoal).toHaveBeenCalledTimes(1)
+    })
+
+    it('calls both onNewGoal and onCreateRootGoal when button is clicked in empty state', () => {
+      const onNewGoal = vi.fn()
+      const onCreateRootGoal = vi.fn()
+      mockHookState = {
+        rootGoals: [],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<GoalTreeView onNewGoal={onNewGoal} onCreateRootGoal={onCreateRootGoal} />)
+
+      fireEvent.click(screen.getByTestId('goal-tree-view-empty-new-goal'))
+
+      expect(onNewGoal).toHaveBeenCalledTimes(1)
+      expect(onCreateRootGoal).toHaveBeenCalledTimes(1)
+    })
   })
 
   describe('rendering goals', () => {
@@ -385,6 +432,56 @@ describe('GoalTreeView', () => {
         'aria-label',
         'Create new goal'
       )
+    })
+
+    it('shows New Goal button when onCreateRootGoal is provided', () => {
+      const goal = createMockGoal({ id: 1 })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<GoalTreeView onCreateRootGoal={() => {}} />)
+
+      expect(screen.getByTestId('goal-tree-view-new-goal')).toBeInTheDocument()
+    })
+
+    it('calls onCreateRootGoal when New Goal button is clicked in toolbar', () => {
+      const onCreateRootGoal = vi.fn()
+      const goal = createMockGoal({ id: 1 })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<GoalTreeView onCreateRootGoal={onCreateRootGoal} />)
+
+      fireEvent.click(screen.getByTestId('goal-tree-view-new-goal'))
+
+      expect(onCreateRootGoal).toHaveBeenCalledTimes(1)
+    })
+
+    it('calls both onNewGoal and onCreateRootGoal when button is clicked in toolbar', () => {
+      const onNewGoal = vi.fn()
+      const onCreateRootGoal = vi.fn()
+      const goal = createMockGoal({ id: 1 })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<GoalTreeView onNewGoal={onNewGoal} onCreateRootGoal={onCreateRootGoal} />)
+
+      fireEvent.click(screen.getByTestId('goal-tree-view-new-goal'))
+
+      expect(onNewGoal).toHaveBeenCalledTimes(1)
+      expect(onCreateRootGoal).toHaveBeenCalledTimes(1)
     })
 
     it('hides toolbar when showToolbar is false', () => {

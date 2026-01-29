@@ -30,6 +30,8 @@ export interface GoalTreeViewProps {
   onDelete?: (node: TreeNodeWithChildren) => void
   /** Callback when "New Goal" button is clicked to create a root goal */
   onNewGoal?: () => void
+  /** Callback when user requests to create a new root-level goal */
+  onCreateRootGoal?: () => void
   /** Currently selected node id */
   selectedNodeId?: number | null
   /** Whether to show the toolbar (expand all/collapse all buttons) */
@@ -62,6 +64,7 @@ export function GoalTreeView({
   onAddChild,
   onDelete,
   onNewGoal,
+  onCreateRootGoal,
   selectedNodeId,
   showToolbar = true,
   initialExpandState = 'default',
@@ -152,6 +155,11 @@ export function GoalTreeView({
     }
   }, [refresh])
 
+  // Handle create root goal
+  const handleCreateRootGoal = useCallback(() => {
+    onCreateRootGoal?.()
+  }, [onCreateRootGoal])
+
   // Loading state
   if (isLoading && !isInitialized) {
     return (
@@ -204,11 +212,14 @@ export function GoalTreeView({
         <p className="text-sm text-center max-w-xs mb-4">
           Start by creating your first goal to begin planning your journey.
         </p>
-        {onNewGoal && (
+        {(onNewGoal || onCreateRootGoal) && (
           <Button
             variant="default"
             size="sm"
-            onClick={onNewGoal}
+            onClick={() => {
+              onNewGoal?.()
+              handleCreateRootGoal()
+            }}
             aria-label="Create new goal"
             data-testid="goal-tree-view-empty-new-goal"
           >
@@ -247,11 +258,14 @@ export function GoalTreeView({
 
           {/* Actions - compact on mobile */}
           <div className="flex items-center gap-1 sm:gap-2">
-            {onNewGoal && (
+            {(onNewGoal || onCreateRootGoal) && (
               <Button
                 variant="default"
                 size="sm"
-                onClick={onNewGoal}
+                onClick={() => {
+                  onNewGoal?.()
+                  handleCreateRootGoal()
+                }}
                 aria-label="Create new goal"
                 data-testid="goal-tree-view-new-goal"
               >
