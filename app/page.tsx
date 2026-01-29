@@ -2,7 +2,6 @@
 
 import { AppLayout } from '@/components/app-layout'
 import { SettingsModal } from '@/components/settings-modal'
-import { AddChildDialog } from '@/components/add-child-dialog'
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
 import { useState, useCallback } from 'react'
 import { Settings } from 'lucide-react'
@@ -15,24 +14,10 @@ export const dynamic = 'force-dynamic'
 
 export default function Home() {
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [selectedParentNode, setSelectedParentNode] = useState<TreeNodeWithChildren | null>(null)
   const [nodeToDelete, setNodeToDelete] = useState<TreeNodeWithChildren | null>(null)
   
   const { addGoal, addMilestone, addRequirement, addTask, deleteNode } = useGoalStore()
-
-  // Open dialog for creating a root goal (empty state button)
-  const handleCreateRootGoal = useCallback(() => {
-    setSelectedParentNode(null)
-    setAddDialogOpen(true)
-  }, [])
-
-  // Open dialog for adding a child to an existing node
-  const handleAddChild = useCallback((parentNode: TreeNodeWithChildren) => {
-    setSelectedParentNode(parentNode)
-    setAddDialogOpen(true)
-  }, [])
 
   // Open delete confirmation dialog for a node
   const handleDeleteNode = useCallback((node: TreeNodeWithChildren) => {
@@ -56,22 +41,15 @@ export default function Home() {
             </Button>
           </div>
         }
-        goalTreeViewProps={{
-          onCreateRootGoal: handleCreateRootGoal,
+        addChildDialogProps={{
+          onAddGoal: addGoal,
+          onAddMilestone: addMilestone,
+          onAddRequirement: addRequirement,
+          onAddTask: addTask,
         }}
-        onAddChild={handleAddChild}
         onDelete={handleDeleteNode}
       />
       <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
-      <AddChildDialog
-        open={addDialogOpen}
-        onOpenChange={setAddDialogOpen}
-        parentNode={selectedParentNode}
-        onAddGoal={addGoal}
-        onAddMilestone={addMilestone}
-        onAddRequirement={addRequirement}
-        onAddTask={addTask}
-      />
       <DeleteConfirmationDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}

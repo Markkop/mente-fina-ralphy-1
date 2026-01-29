@@ -4,6 +4,7 @@ import { useState, useCallback, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { GoalTreeView, type GoalTreeViewProps } from './goal-tree-view'
 import { ChatSidebar, type ChatSidebarProps } from './chat-sidebar'
+import { AddChildDialog, type AddChildDialogProps } from './add-child-dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import type { TreeNodeWithChildren } from '@/lib/goal-store'
 
@@ -25,9 +26,11 @@ export interface AppLayoutProps {
   goalTreeViewProps?: Omit<GoalTreeViewProps, 'className'>
   /** Props to pass to ChatSidebar */
   chatSidebarProps?: Omit<ChatSidebarProps, 'open' | 'onOpenChange' | 'defaultOpen'>
+  /** Props to pass to AddChildDialog (excluding open, onOpenChange, parentNode) */
+  addChildDialogProps?: Omit<AddChildDialogProps, 'open' | 'onOpenChange' | 'parentNode'>
   /** Callback when a node is selected in the tree */
   onSelectNode?: (node: TreeNodeWithChildren) => void
-  /** Callback when add child is clicked on a node */
+  /** Callback when add child is clicked on a node (called before dialog opens) */
   onAddChild?: (parentNode: TreeNodeWithChildren) => void
   /** Callback when delete is clicked on a node */
   onDelete?: (node: TreeNodeWithChildren) => void
@@ -65,6 +68,7 @@ export function AppLayout({
   onChatOpenChange,
   goalTreeViewProps,
   chatSidebarProps,
+  addChildDialogProps,
   onSelectNode,
   onAddChild,
   onDelete,
@@ -75,6 +79,10 @@ export function AppLayout({
   const isControlled = controlledChatOpen !== undefined
   const isChatOpen = isControlled ? controlledChatOpen : internalChatOpen
 
+  // Add child dialog state
+  const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [selectedParentNode, setSelectedParentNode] = useState<TreeNodeWithChildren | null>(null)
+
   const handleChatOpenChange = useCallback(
     (open: boolean) => {
       if (!isControlled) {
@@ -84,6 +92,22 @@ export function AppLayout({
     },
     [isControlled, onChatOpenChange]
   )
+
+  // Handle add child button click - opens the dialog
+  const handleAddChild = useCallback(
+    (parentNode: TreeNodeWithChildren) => {
+      setSelectedParentNode(parentNode)
+      setAddDialogOpen(true)
+      onAddChild?.(parentNode)
+    },
+    [onAddChild]
+  )
+
+  // Handle create root goal from empty state
+  const handleCreateRootGoal = useCallback(() => {
+    setSelectedParentNode(null)
+    setAddDialogOpen(true)
+  }, [])
 
   return (
     <div
@@ -118,9 +142,10 @@ export function AppLayout({
               <GoalTreeView
                 {...goalTreeViewProps}
                 onSelectNode={onSelectNode}
-                onAddChild={onAddChild}
+                onAddChild={handleAddChild}
                 onDelete={onDelete}
                 selectedNodeId={selectedNodeId}
+                onCreateRootGoal={goalTreeViewProps?.onCreateRootGoal ?? handleCreateRootGoal}
               />
             </div>
           </ScrollArea>
@@ -133,6 +158,14 @@ export function AppLayout({
           onOpenChange={handleChatOpenChange}
         />
       </div>
+
+      {/* Add Child Dialog */}
+      <AddChildDialog
+        {...addChildDialogProps}
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
+        parentNode={selectedParentNode}
+      />
     </div>
   )
 }

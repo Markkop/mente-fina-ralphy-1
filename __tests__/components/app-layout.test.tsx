@@ -240,6 +240,164 @@ describe('AppLayout', () => {
     })
   })
 
+  describe('add child dialog integration', () => {
+    it('opens add child dialog when add child button is clicked', async () => {
+      const goal = createMockGoal({ id: 1, title: 'Test Goal' })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<AppLayout />)
+
+      // Dialog should not be visible initially
+      expect(screen.queryByTestId('add-child-dialog')).not.toBeInTheDocument()
+
+      // Click the add child button
+      fireEvent.click(screen.getByTestId('goal-add-child-button-1'))
+
+      // Dialog should now be visible
+      await waitFor(() => {
+        expect(screen.getByTestId('add-child-dialog')).toBeInTheDocument()
+      })
+    })
+
+    it('passes the correct parent node to the add child dialog', async () => {
+      const goal = createMockGoal({ id: 1, title: 'Parent Goal' })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<AppLayout />)
+
+      fireEvent.click(screen.getByTestId('goal-add-child-button-1'))
+
+      await waitFor(() => {
+        // Use regex to match typographic quotes (curly quotes)
+        expect(screen.getByTestId('add-child-dialog-title')).toHaveTextContent(/Add to .Parent Goal./)
+      })
+    })
+
+    it('calls onAddChild callback before opening dialog', async () => {
+      const onAddChild = vi.fn()
+      const goal = createMockGoal({ id: 1 })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<AppLayout onAddChild={onAddChild} />)
+
+      fireEvent.click(screen.getByTestId('goal-add-child-button-1'))
+
+      expect(onAddChild).toHaveBeenCalledWith(goal)
+
+      await waitFor(() => {
+        expect(screen.getByTestId('add-child-dialog')).toBeInTheDocument()
+      })
+    })
+
+    it('passes addChildDialogProps to the dialog', async () => {
+      const mockOnAddGoal = vi.fn().mockResolvedValue(1)
+      const goal = createMockGoal({ id: 1 })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(
+        <AppLayout
+          addChildDialogProps={{
+            onAddGoal: mockOnAddGoal,
+          }}
+        />
+      )
+
+      // Open the dialog
+      fireEvent.click(screen.getByTestId('goal-add-child-button-1'))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('add-child-dialog')).toBeInTheDocument()
+      })
+
+      // Select goal type and fill in the form
+      fireEvent.click(screen.getByTestId('type-option-goal'))
+      fireEvent.change(screen.getByTestId('title-input'), { target: { value: 'New Goal' } })
+      fireEvent.click(screen.getByTestId('submit-button'))
+
+      await waitFor(() => {
+        expect(mockOnAddGoal).toHaveBeenCalledWith({
+          title: 'New Goal',
+          description: undefined,
+          parentId: 1,
+        })
+      })
+    })
+
+    it('closes dialog after successful submission', async () => {
+      const mockOnAddTask = vi.fn().mockResolvedValue(1)
+      const goal = createMockGoal({ id: 1 })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(
+        <AppLayout
+          addChildDialogProps={{
+            onAddTask: mockOnAddTask,
+          }}
+        />
+      )
+
+      // Open the dialog
+      fireEvent.click(screen.getByTestId('goal-add-child-button-1'))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('add-child-dialog')).toBeInTheDocument()
+      })
+
+      // Fill in the form and submit
+      fireEvent.change(screen.getByTestId('title-input'), { target: { value: 'New Task' } })
+      fireEvent.click(screen.getByTestId('submit-button'))
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('add-child-dialog')).not.toBeInTheDocument()
+      })
+    })
+
+    it('opens dialog with null parent when create root goal is clicked from empty state', async () => {
+      mockHookState = {
+        rootGoals: [],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<AppLayout />)
+
+      // Click the create goal button in empty state
+      const createButton = screen.getByRole('button', { name: /create.*goal/i })
+      fireEvent.click(createButton)
+
+      await waitFor(() => {
+        expect(screen.getByTestId('add-child-dialog')).toBeInTheDocument()
+        expect(screen.getByTestId('add-child-dialog-title')).toHaveTextContent('Create New Goal')
+      })
+    })
+  })
+
   describe('goalTreeViewProps', () => {
     it('passes goalTreeViewProps to GoalTreeView', () => {
       const goal = createMockGoal({ id: 1 })
