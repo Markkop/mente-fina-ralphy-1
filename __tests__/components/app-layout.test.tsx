@@ -398,6 +398,180 @@ describe('AppLayout', () => {
     })
   })
 
+  describe('delete confirmation dialog integration', () => {
+    it('opens delete confirmation dialog when delete button is clicked', async () => {
+      const goal = createMockGoal({ id: 1, title: 'Test Goal' })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<AppLayout />)
+
+      // Dialog should not be visible initially
+      expect(screen.queryByTestId('delete-confirmation-dialog')).not.toBeInTheDocument()
+
+      // Click the delete button
+      fireEvent.click(screen.getByTestId('goal-delete-button-1'))
+
+      // Dialog should now be visible
+      await waitFor(() => {
+        expect(screen.getByTestId('delete-confirmation-dialog')).toBeInTheDocument()
+      })
+    })
+
+    it('passes the correct node to the delete confirmation dialog', async () => {
+      const goal = createMockGoal({ id: 1, title: 'Goal to Delete' })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<AppLayout />)
+
+      fireEvent.click(screen.getByTestId('goal-delete-button-1'))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('node-title')).toHaveTextContent('"Goal to Delete"')
+      })
+    })
+
+    it('calls onDelete callback before opening dialog', async () => {
+      const onDelete = vi.fn()
+      const goal = createMockGoal({ id: 1 })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<AppLayout onDelete={onDelete} />)
+
+      fireEvent.click(screen.getByTestId('goal-delete-button-1'))
+
+      expect(onDelete).toHaveBeenCalledWith(goal)
+
+      await waitFor(() => {
+        expect(screen.getByTestId('delete-confirmation-dialog')).toBeInTheDocument()
+      })
+    })
+
+    it('passes deleteConfirmationDialogProps to the dialog', async () => {
+      const mockOnDelete = vi.fn().mockResolvedValue(1)
+      const goal = createMockGoal({ id: 1, title: 'Test Goal' })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(
+        <AppLayout
+          deleteConfirmationDialogProps={{
+            onDelete: mockOnDelete,
+          }}
+        />
+      )
+
+      // Open the dialog
+      fireEvent.click(screen.getByTestId('goal-delete-button-1'))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('delete-confirmation-dialog')).toBeInTheDocument()
+      })
+
+      // Click the confirm delete button
+      fireEvent.click(screen.getByTestId('confirm-delete-button'))
+
+      await waitFor(() => {
+        expect(mockOnDelete).toHaveBeenCalledWith(1, 'goal')
+      })
+    })
+
+    it('closes dialog after successful deletion', async () => {
+      const mockOnDelete = vi.fn().mockResolvedValue(1)
+      const goal = createMockGoal({ id: 1 })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(
+        <AppLayout
+          deleteConfirmationDialogProps={{
+            onDelete: mockOnDelete,
+          }}
+        />
+      )
+
+      // Open the dialog
+      fireEvent.click(screen.getByTestId('goal-delete-button-1'))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('delete-confirmation-dialog')).toBeInTheDocument()
+      })
+
+      // Confirm deletion
+      fireEvent.click(screen.getByTestId('confirm-delete-button'))
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('delete-confirmation-dialog')).not.toBeInTheDocument()
+      })
+    })
+
+    it('closes dialog when cancel is clicked', async () => {
+      const goal = createMockGoal({ id: 1 })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<AppLayout />)
+
+      // Open the dialog
+      fireEvent.click(screen.getByTestId('goal-delete-button-1'))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('delete-confirmation-dialog')).toBeInTheDocument()
+      })
+
+      // Click cancel
+      fireEvent.click(screen.getByTestId('cancel-button'))
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('delete-confirmation-dialog')).not.toBeInTheDocument()
+      })
+    })
+
+    it('shows correct node type in delete dialog for tasks', async () => {
+      const task = createMockGoal({ id: 1, title: 'Test Task', nodeType: 'task' })
+      mockHookState = {
+        rootGoals: [task],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<AppLayout />)
+
+      fireEvent.click(screen.getByTestId('goal-delete-button-1'))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('delete-dialog-title')).toHaveTextContent('Delete task?')
+      })
+    })
+  })
+
   describe('goalTreeViewProps', () => {
     it('passes goalTreeViewProps to GoalTreeView', () => {
       const goal = createMockGoal({ id: 1 })

@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import { GoalTreeView, type GoalTreeViewProps } from './goal-tree-view'
 import { ChatSidebar, type ChatSidebarProps } from './chat-sidebar'
 import { AddChildDialog, type AddChildDialogProps } from './add-child-dialog'
+import { DeleteConfirmationDialog, type DeleteConfirmationDialogProps } from './delete-confirmation-dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import type { TreeNodeWithChildren } from '@/lib/goal-store'
 
@@ -28,11 +29,13 @@ export interface AppLayoutProps {
   chatSidebarProps?: Omit<ChatSidebarProps, 'open' | 'onOpenChange' | 'defaultOpen'>
   /** Props to pass to AddChildDialog (excluding open, onOpenChange, parentNode) */
   addChildDialogProps?: Omit<AddChildDialogProps, 'open' | 'onOpenChange' | 'parentNode'>
+  /** Props to pass to DeleteConfirmationDialog (excluding open, onOpenChange, node) */
+  deleteConfirmationDialogProps?: Omit<DeleteConfirmationDialogProps, 'open' | 'onOpenChange' | 'node'>
   /** Callback when a node is selected in the tree */
   onSelectNode?: (node: TreeNodeWithChildren) => void
   /** Callback when add child is clicked on a node (called before dialog opens) */
   onAddChild?: (parentNode: TreeNodeWithChildren) => void
-  /** Callback when delete is clicked on a node */
+  /** Callback when delete is clicked on a node (called before dialog opens) */
   onDelete?: (node: TreeNodeWithChildren) => void
   /** Currently selected node id */
   selectedNodeId?: number | null
@@ -69,6 +72,7 @@ export function AppLayout({
   goalTreeViewProps,
   chatSidebarProps,
   addChildDialogProps,
+  deleteConfirmationDialogProps,
   onSelectNode,
   onAddChild,
   onDelete,
@@ -82,6 +86,10 @@ export function AppLayout({
   // Add child dialog state
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [selectedParentNode, setSelectedParentNode] = useState<TreeNodeWithChildren | null>(null)
+
+  // Delete confirmation dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [nodeToDelete, setNodeToDelete] = useState<TreeNodeWithChildren | null>(null)
 
   const handleChatOpenChange = useCallback(
     (open: boolean) => {
@@ -108,6 +116,16 @@ export function AppLayout({
     setSelectedParentNode(null)
     setAddDialogOpen(true)
   }, [])
+
+  // Handle delete button click - opens the confirmation dialog
+  const handleDelete = useCallback(
+    (node: TreeNodeWithChildren) => {
+      setNodeToDelete(node)
+      setDeleteDialogOpen(true)
+      onDelete?.(node)
+    },
+    [onDelete]
+  )
 
   return (
     <div
@@ -143,7 +161,7 @@ export function AppLayout({
                 {...goalTreeViewProps}
                 onSelectNode={onSelectNode}
                 onAddChild={handleAddChild}
-                onDelete={onDelete}
+                onDelete={handleDelete}
                 selectedNodeId={selectedNodeId}
                 onCreateRootGoal={goalTreeViewProps?.onCreateRootGoal ?? handleCreateRootGoal}
               />
@@ -165,6 +183,14 @@ export function AppLayout({
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
         parentNode={selectedParentNode}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        {...deleteConfirmationDialogProps}
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        node={nodeToDelete}
       />
     </div>
   )

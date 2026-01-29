@@ -2,28 +2,18 @@
 
 import { AppLayout } from '@/components/app-layout'
 import { SettingsModal } from '@/components/settings-modal'
-import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useGoalStore } from '@/lib/goal-store'
-import type { TreeNodeWithChildren } from '@/lib/goal-store'
 
 // Disable static generation since we use IndexedDB (client-side only)
 export const dynamic = 'force-dynamic'
 
 export default function Home() {
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [nodeToDelete, setNodeToDelete] = useState<TreeNodeWithChildren | null>(null)
   
   const { addGoal, addMilestone, addRequirement, addTask, deleteNode } = useGoalStore()
-
-  // Open delete confirmation dialog for a node
-  const handleDeleteNode = useCallback((node: TreeNodeWithChildren) => {
-    setNodeToDelete(node)
-    setDeleteDialogOpen(true)
-  }, [])
 
   return (
     <>
@@ -47,15 +37,11 @@ export default function Home() {
           onAddRequirement: addRequirement,
           onAddTask: addTask,
         }}
-        onDelete={handleDeleteNode}
+        deleteConfirmationDialogProps={{
+          onDelete: deleteNode,
+        }}
       />
       <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
-      <DeleteConfirmationDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-        node={nodeToDelete}
-        onDelete={deleteNode}
-      />
     </>
   )
 }
