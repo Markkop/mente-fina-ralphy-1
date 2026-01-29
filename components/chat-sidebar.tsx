@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback, FormEvent } from 'react'
-import { useChat, type Message } from '@ai-sdk/react'
 import {
   MessageSquare,
   Send,
@@ -14,6 +13,7 @@ import {
   User,
   PanelRightClose,
 } from 'lucide-react'
+import { useChat, type UIMessage } from '@ai-sdk/react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -47,17 +47,47 @@ export interface ChatSidebarProps {
 }
 
 /**
- * Props for the ChatMessage component
+ * Message type for chat interface - supports both content string and parts array
  */
-interface ChatMessageProps {
-  message: Message
+interface ChatMessageData {
+  id: string
+  role: 'user' | 'assistant' | 'system'
+  content?: string
+  parts?: Array<{ type: string; text?: string }>
 }
 
 /**
- * ChatMessage component - renders a single chat message
+ * Helper function to extract text content from a message
+ * Supports both legacy 'content' string format and newer 'parts' array format
  */
-function ChatMessage({ message }: ChatMessageProps) {
+function getMessageContent(message: ChatMessageData): string {
+  // Handle direct content string
+  if (typeof message.content === 'string') {
+    return message.content
+  }
+  // Handle parts array (Vercel AI SDK UIMessage format)
+  if (Array.isArray(message.parts)) {
+    return message.parts
+      .filter((part) => part.type === 'text' && typeof part.text === 'string')
+      .map((part) => part.text)
+      .join('')
+  }
+  return ''
+}
+
+/**
+ * Props for the ChatMessageItem component
+ */
+interface ChatMessageItemProps {
+  message: ChatMessageData
+}
+
+/**
+ * ChatMessageItem component - renders a single chat message
+ */
+function ChatMessageItem({ message }: ChatMessageItemProps) {
   const isAssistant = message.role === 'assistant'
+  const content = getMessageContent(message)
 
   return (
     <div
@@ -81,7 +111,7 @@ function ChatMessage({ message }: ChatMessageProps) {
           {isAssistant ? 'GoalTree AI' : 'You'}
         </p>
         <div className="text-sm whitespace-pre-wrap break-words">
-          {message.content}
+          {content}
         </div>
       </div>
     </div>
@@ -212,33 +242,42 @@ export function ChatSidebar({
   // Create OpenAI client when key is available
   const openai = hasKey ? createOpenAIClient() : null
 
-  // Chat state using Vercel AI SDK
+  // Manual loading state for client-side streaming
+  const [isStreamingLoading, setIsStreamingLoading] = useState(false)
+
+  // Chat state using Vercel AI SDK (for state management only)
   const {
     messages,
     input,
     handleInputChange,
-    isLoading,
+    isLoading: useChatLoading,
     error: chatError,
     setMessages,
   } = useChat({
-    api: '/api/chat', // This would be overridden for client-side usage
+    api: '/api/chat', // Not used - we handle streaming client-side
     initialMessages: [],
     body: {
       model: DEFAULT_CHAT_MODEL,
     },
   })
 
+  // Combined loading state (from useChat or manual streaming)
+  const isLoading = useChatLoading || isStreamingLoading
+
   // Custom submit handler for client-side OpenAI calls
   const handleSubmit = useCallback(
     async (e: FormEvent) => {
       e.preventDefault()
-      if (!input.trim() || !openai) return
+      if (!input.trim() || !openai || isLoading) return
 
-      const userMessage: Message = {
+      const userMessage: UIMessage = {
         id: Date.now().toString(),
         role: 'user',
-        content: input.trim(),
+        parts: [{ type: 'text', text: input.trim() }],
       }
+
+      // Clear input immediately for better UX
+      handleInputChange({ target: { value: '' } } as React.ChangeEvent<HTMLInputElement>)
 
       // Add user message immediately
       setMessages((prev) => [...prev, userMessage])
@@ -247,8 +286,11 @@ export function ChatSidebar({
       const assistantId = (Date.now() + 1).toString()
       setMessages((prev) => [
         ...prev,
-        { id: assistantId, role: 'assistant', content: '' },
+        { id: assistantId, role: 'assistant', parts: [{ type: 'text', text: '' }] } as UIMessage,
       ])
+
+      // Set loading state
+      setIsStreamingLoading(true)
 
       try {
         // Import the streamText function dynamically for client-side usage
@@ -260,7 +302,7 @@ export function ChatSidebar({
           system: GOALTREE_SYSTEM_PROMPT,
           messages: [...messages, userMessage].map((m) => ({
             role: m.role as 'user' | 'assistant' | 'system',
-            content: m.content,
+            content: getMessageContent(m),
           })),
         })
 
@@ -269,7 +311,9 @@ export function ChatSidebar({
           fullContent += textPart
           setMessages((prev) =>
             prev.map((m) =>
-              m.id === assistantId ? { ...m, content: fullContent } : m
+              m.id === assistantId
+                ? { ...m, parts: [{ type: 'text', text: fullContent }] }
+                : m
             )
           )
         }
@@ -280,18 +324,21 @@ export function ChatSidebar({
             m.id === assistantId
               ? {
                   ...m,
-                  content:
-                    'Sorry, I encountered an error. Please check your API key and try again.',
+                  parts: [
+                    {
+                      type: 'text',
+                      text: 'Sorry, I encountered an error. Please check your API key and try again.',
+                    },
+                  ],
                 }
               : m
           )
         )
+      } finally {
+        setIsStreamingLoading(false)
       }
-
-      // Clear input by triggering a synthetic event
-      handleInputChange({ target: { value: '' } } as React.ChangeEvent<HTMLInputElement>)
     },
-    [input, openai, messages, setMessages, handleInputChange]
+    [input, openai, messages, setMessages, handleInputChange, isLoading]
   )
 
   // Scroll to bottom when new messages arrive
@@ -442,7 +489,7 @@ export function ChatSidebar({
                     </div>
                   ) : (
                     messages.map((message) => (
-                      <ChatMessage key={message.id} message={message} />
+                      <ChatMessageItem key={message.id} message={message as ChatMessageData} />
                     ))
                   )}
                   {isLoading && (
