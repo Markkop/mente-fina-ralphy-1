@@ -83,3 +83,7 @@ export class GoalTreeDatabase extends Dexie {
 
 // Singleton database instance
 export const db = new GoalTreeDatabase()
+
+// Export repository
+export { GoalRepository, goalRepository } from './goal-repository'
+export type { CreateGoalInput, CreateTaskInput, CreateNodeInput, TreeNode } from './goal-repository'
