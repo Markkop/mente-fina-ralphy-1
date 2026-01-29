@@ -1,8 +1,86 @@
 'use client'
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useSyncExternalStore } from 'react'
 import { useGoalStore, type TreeNodeWithChildren } from './goal-store'
 import type { Goal, Task, NodeStatus, CreateGoalInput, CreateTaskInput, TaskFrequency } from '@/src/db'
+
+const OPENAI_KEY_STORAGE_KEY = 'goaltree-openai-api-key'
+
+// Custom event for localStorage changes within the same tab
+const STORAGE_EVENT_NAME = 'goaltree-storage-change'
+
+function getSnapshot(): string | null {
+  if (typeof window === 'undefined') {
+    return null
+  }
+  return localStorage.getItem(OPENAI_KEY_STORAGE_KEY)
+}
+
+function getServerSnapshot(): string | null {
+  return null
+}
+
+function subscribe(callback: () => void): () => void {
+  // Listen for storage events from other tabs
+  const handleStorageChange = (event: StorageEvent) => {
+    if (event.key === OPENAI_KEY_STORAGE_KEY) {
+      callback()
+    }
+  }
+
+  // Listen for custom events from the same tab
+  const handleCustomEvent = () => {
+    callback()
+  }
+
+  window.addEventListener('storage', handleStorageChange)
+  window.addEventListener(STORAGE_EVENT_NAME, handleCustomEvent)
+
+  return () => {
+    window.removeEventListener('storage', handleStorageChange)
+    window.removeEventListener(STORAGE_EVENT_NAME, handleCustomEvent)
+  }
+}
+
+/**
+ * useOpenAIKey hook - manages the OpenAI API key in LocalStorage
+ *
+ * This hook provides a way to store and retrieve the OpenAI API key
+ * from LocalStorage. The key is never sent to any backend server.
+ *
+ * @returns {object} - Object containing the API key and setter functions
+ */
+export function useOpenAIKey() {
+  const apiKey = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
+
+  // Set the API key in LocalStorage
+  const setApiKey = useCallback((key: string) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(OPENAI_KEY_STORAGE_KEY, key)
+      // Dispatch custom event for same-tab updates
+      window.dispatchEvent(new Event(STORAGE_EVENT_NAME))
+    }
+  }, [])
+
+  // Clear the API key from LocalStorage
+  const clearApiKey = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(OPENAI_KEY_STORAGE_KEY)
+      // Dispatch custom event for same-tab updates
+      window.dispatchEvent(new Event(STORAGE_EVENT_NAME))
+    }
+  }, [])
+
+  // Check if the API key is set
+  const hasApiKey = useMemo(() => apiKey !== null && apiKey.length > 0, [apiKey])
+
+  return {
+    apiKey,
+    hasApiKey,
+    setApiKey,
+    clearApiKey,
+  }
+}
 
 /**
  * Extended Goal type with hierarchy information

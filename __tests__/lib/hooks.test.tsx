@@ -1,11 +1,123 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { renderHook, act } from '@testing-library/react'
 import { GoalTreeDatabase } from '@/src/db'
 import { createGoalStore } from '@/lib/goal-store'
+import { useOpenAIKey } from '@/lib/hooks'
 
 // We need to mock the useGoalStore hook to use our test database
 // Since the hooks use the singleton store, we'll test them by setting up data
 // and verifying the hook outputs
+
+describe('useOpenAIKey hook', () => {
+  const STORAGE_KEY = 'goaltree-openai-api-key'
+
+  beforeEach(() => {
+    // Clear localStorage before each test
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    // Clean up after each test
+    localStorage.clear()
+  })
+
+  describe('initial state', () => {
+    it('returns null apiKey when no key is stored', () => {
+      const { result } = renderHook(() => useOpenAIKey())
+
+      expect(result.current.apiKey).toBeNull()
+      expect(result.current.hasApiKey).toBe(false)
+    })
+
+    it('loads existing API key from localStorage', () => {
+      const testKey = 'sk-test-key-12345'
+      localStorage.setItem(STORAGE_KEY, testKey)
+
+      const { result } = renderHook(() => useOpenAIKey())
+
+      expect(result.current.apiKey).toBe(testKey)
+      expect(result.current.hasApiKey).toBe(true)
+    })
+  })
+
+  describe('setApiKey', () => {
+    it('sets the API key in state and localStorage', () => {
+      const { result } = renderHook(() => useOpenAIKey())
+      const testKey = 'sk-new-api-key-67890'
+
+      act(() => {
+        result.current.setApiKey(testKey)
+      })
+
+      expect(result.current.apiKey).toBe(testKey)
+      expect(result.current.hasApiKey).toBe(true)
+      expect(localStorage.getItem(STORAGE_KEY)).toBe(testKey)
+    })
+
+    it('updates an existing API key', () => {
+      localStorage.setItem(STORAGE_KEY, 'sk-old-key')
+      const { result } = renderHook(() => useOpenAIKey())
+
+      const newKey = 'sk-updated-key'
+      act(() => {
+        result.current.setApiKey(newKey)
+      })
+
+      expect(result.current.apiKey).toBe(newKey)
+      expect(localStorage.getItem(STORAGE_KEY)).toBe(newKey)
+    })
+  })
+
+  describe('clearApiKey', () => {
+    it('clears the API key from state and localStorage', () => {
+      localStorage.setItem(STORAGE_KEY, 'sk-key-to-clear')
+      const { result } = renderHook(() => useOpenAIKey())
+
+      expect(result.current.apiKey).toBe('sk-key-to-clear')
+
+      act(() => {
+        result.current.clearApiKey()
+      })
+
+      expect(result.current.apiKey).toBeNull()
+      expect(result.current.hasApiKey).toBe(false)
+      expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
+    })
+
+    it('does nothing when no key exists', () => {
+      const { result } = renderHook(() => useOpenAIKey())
+
+      act(() => {
+        result.current.clearApiKey()
+      })
+
+      expect(result.current.apiKey).toBeNull()
+      expect(result.current.hasApiKey).toBe(false)
+    })
+  })
+
+  describe('hasApiKey', () => {
+    it('returns false for null key', () => {
+      const { result } = renderHook(() => useOpenAIKey())
+
+      expect(result.current.hasApiKey).toBe(false)
+    })
+
+    it('returns false for empty string key', () => {
+      localStorage.setItem(STORAGE_KEY, '')
+      const { result } = renderHook(() => useOpenAIKey())
+
+      expect(result.current.hasApiKey).toBe(false)
+    })
+
+    it('returns true for non-empty key', () => {
+      localStorage.setItem(STORAGE_KEY, 'sk-valid-key')
+      const { result } = renderHook(() => useOpenAIKey())
+
+      expect(result.current.hasApiKey).toBe(true)
+    })
+  })
+})
 
 describe('useGoals hook', () => {
   let testDb: GoalTreeDatabase
