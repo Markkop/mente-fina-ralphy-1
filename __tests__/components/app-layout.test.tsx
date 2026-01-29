@@ -396,6 +396,70 @@ describe('AppLayout', () => {
         expect(screen.getByTestId('add-child-dialog-title')).toHaveTextContent('Create New Goal')
       })
     })
+
+    it('opens dialog with null parent when New Goal toolbar button is clicked', async () => {
+      const goal = createMockGoal({ id: 1, title: 'Existing Goal' })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<AppLayout />)
+
+      // Click the New Goal button in the toolbar
+      const newGoalButton = screen.getByTestId('goal-tree-view-new-goal')
+      fireEvent.click(newGoalButton)
+
+      await waitFor(() => {
+        expect(screen.getByTestId('add-child-dialog')).toBeInTheDocument()
+        // Dialog title should indicate root goal creation (no parent)
+        expect(screen.getByTestId('add-child-dialog-title')).toHaveTextContent('Create New Goal')
+        // Dialog description should indicate top-level goal
+        expect(screen.getByTestId('add-child-dialog-description')).toHaveTextContent('Create a new top-level goal.')
+      })
+    })
+
+    it('allows creating root goal from toolbar and submitting successfully', async () => {
+      const mockOnAddGoal = vi.fn().mockResolvedValue(2)
+      const goal = createMockGoal({ id: 1, title: 'Existing Goal' })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(
+        <AppLayout
+          addChildDialogProps={{
+            onAddGoal: mockOnAddGoal,
+          }}
+        />
+      )
+
+      // Click the New Goal button in the toolbar
+      fireEvent.click(screen.getByTestId('goal-tree-view-new-goal'))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('add-child-dialog')).toBeInTheDocument()
+      })
+
+      // Fill in the form (type selector should not be shown for root goals)
+      expect(screen.queryByTestId('type-selector')).not.toBeInTheDocument()
+
+      fireEvent.change(screen.getByTestId('title-input'), { target: { value: 'New Root Goal' } })
+      fireEvent.click(screen.getByTestId('submit-button'))
+
+      await waitFor(() => {
+        // Should call onAddGoal without parentId for root goal
+        expect(mockOnAddGoal).toHaveBeenCalledWith({
+          title: 'New Root Goal',
+          description: undefined,
+        })
+      })
+    })
   })
 
   describe('delete confirmation dialog integration', () => {
