@@ -89,53 +89,53 @@ This checklist is formatted for **Ralphy** to execute sequentially. It builds th
 
 ## Project Setup
 
-* [x] Initialize Next.js project with TypeScript, Tailwind, and App Router
-* [ ] Install ShadCN/UI and add base components (Button, Input, Sheet, Dialog, Card, ScrollArea, Tabs)
-* [ ] Install `dexie` and `dexie-react-hooks` for local database management
-* [ ] Install `lucide-react` for icons and `clsx`/`tailwind-merge` for styling utilities
-* [ ] Configure `ai` (Vercel AI SDK) for client-side chat integration
+- [x] Initialize Next.js project with TypeScript, Tailwind, and App Router
+- [x] Install ShadCN/UI and add base components (Button, Input, Sheet, Dialog, Card, ScrollArea, Tabs)
+- [x] Install `dexie` and `dexie-react-hooks` for local database management
+- [ ] Install `lucide-react` for icons and `clsx`/`tailwind-merge` for styling utilities
+- [ ] Configure `ai` (Vercel AI SDK) for client-side chat integration
 
 ## Local Database (IndexedDB)
 
-* [ ] Initialize Dexie database instance in `src/db/index.ts`
-* [ ] Define the `Goal` table schema (id, title, description, parentId, type, status, createdAt)
-* [ ] Define the `Task` table schema (id, parentId, title, frequency, isCompleted, scheduledDate)
-* [ ] Define the `Settings` table schema (workHoursStart, workHoursEnd, sleepStart, sleepEnd)
-* [ ] Create a `seed.ts` script to populate a demo tree (e.g., the "Buy a House" example) for first-time load
+- [ ] Initialize Dexie database instance in `src/db/index.ts`
+- [ ] Define the `Goal` table schema (id, title, description, parentId, type, status, createdAt)
+- [ ] Define the `Task` table schema (id, parentId, title, frequency, isCompleted, scheduledDate)
+- [ ] Define the `Settings` table schema (workHoursStart, workHoursEnd, sleepStart, sleepEnd)
+- [ ] Create a `seed.ts` script to populate a demo tree (e.g., the "Buy a House" example) for first-time load
 
 ## Core State & Data Layer
 
-* [ ] Create a `GoalRepository` class to handle Dexie CRUD operations (addNode, deleteNode, moveNode)
-* [ ] Set up `useGoalStore` with Zustand to manage the in-memory tree state and sync with Dexie
-* [ ] Create React Context or Hooks (`useGoals`, `useTasks`) to expose data to components
+- [ ] Create a `GoalRepository` class to handle Dexie CRUD operations (addNode, deleteNode, moveNode)
+- [ ] Set up `useGoalStore` with Zustand to manage the in-memory tree state and sync with Dexie
+- [ ] Create React Context or Hooks (`useGoals`, `useTasks`) to expose data to components
 
 ## UI Components: The Goal Tree
 
-* [ ] Create `NodeItem` component (the recursive building block for the tree)
-* [ ] Implement `GoalNode` variant (distinct visual style, progress bar)
-* [ ] Implement `TaskNode` variant (checkbox, frequency badge)
-* [ ] Implement `RequirementNode` variant (informational styling, non-checkable)
-* [ ] Build the main `GoalTreeView` container with expand/collapse logic
-* [ ] Create "Add Child" dialog to append new items to any node
+- [ ] Create `NodeItem` component (the recursive building block for the tree)
+- [ ] Implement `GoalNode` variant (distinct visual style, progress bar)
+- [ ] Implement `TaskNode` variant (checkbox, frequency badge)
+- [ ] Implement `RequirementNode` variant (informational styling, non-checkable)
+- [ ] Build the main `GoalTreeView` container with expand/collapse logic
+- [ ] Create "Add Child" dialog to append new items to any node
 
 ## UI Components: AI Chatbot
 
-* [ ] Build the `ChatSidebar` component (collapsible panel on the right)
-* [ ] Create `useOpenAIKey` hook to manage the API key in LocalStorage
-* [ ] Implement the chat interface using `useChat` from Vercel AI SDK
-* [ ] Create a "Suggestion Card" component to display AI-proposed goal structures
-* [ ] Implement the "Apply" logic: Parse AI JSON response -> Insert into Dexie -> Update Tree
+- [ ] Build the `ChatSidebar` component (collapsible panel on the right)
+- [ ] Create `useOpenAIKey` hook to manage the API key in LocalStorage
+- [ ] Implement the chat interface using `useChat` from Vercel AI SDK
+- [ ] Create a "Suggestion Card" component to display AI-proposed goal structures
+- [ ] Implement the "Apply" logic: Parse AI JSON response -> Insert into Dexie -> Update Tree
 
 ## UI Components: Calendar
 
-* [ ] Build `WeeklyView` component (CSS Grid based 7-column layout)
-* [ ] Implement `TimeSlot` rendering logic to visualize Work and Sleep blocks from settings
-* [ ] Create `DraggableTask` logic (or simple "Click to Schedule" modal) to assign tasks to time slots
-* [ ] Render scheduled tasks onto the grid
+- [ ] Build `WeeklyView` component (CSS Grid based 7-column layout)
+- [ ] Implement `TimeSlot` rendering logic to visualize Work and Sleep blocks from settings
+- [ ] Create `DraggableTask` logic (or simple "Click to Schedule" modal) to assign tasks to time slots
+- [ ] Render scheduled tasks onto the grid
 
 ## Polish & Integration
 
-* [ ] Create a `Layout` wrapper that combines the Tree View (Left) and Chat Sidebar (Right)
-* [ ] Implement the `SettingsModal` to configure Work/Sleep hours
-* [ ] Add a "Reset/Clear Data" button in settings for debugging
-* [ ] Verify mobile responsiveness (stack views instead of split screen on small devices)
+- [ ] Create a `Layout` wrapper that combines the Tree View (Left) and Chat Sidebar (Right)
+- [ ] Implement the `SettingsModal` to configure Work/Sleep hours
+- [ ] Add a "Reset/Clear Data" button in settings for debugging
+- [ ] Verify mobile responsiveness (stack views instead of split screen on small devices)
