@@ -1,0 +1,377 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { AppLayout } from '@/components/app-layout'
+import type { TreeNodeWithChildren } from '@/lib/goal-store'
+
+// Mock the hooks module
+const mockInitialize = vi.fn()
+const mockRefresh = vi.fn()
+const mockToggleTaskCompletion = vi.fn()
+
+let mockHookState = {
+  rootGoals: [] as TreeNodeWithChildren[],
+  isLoading: false,
+  error: null as string | null,
+  isInitialized: true,
+}
+
+vi.mock('@/lib/hooks', () => ({
+  useGoalTree: () => ({
+    ...mockHookState,
+    initialize: mockInitialize,
+    refresh: mockRefresh,
+    toggleTaskCompletion: mockToggleTaskCompletion,
+  }),
+}))
+
+// Mock the AI module
+vi.mock('@/lib/ai', () => ({
+  useOpenAIKey: () => ({
+    hasKey: true,
+    isLoaded: true,
+    saveApiKey: vi.fn(),
+    clearApiKey: vi.fn(),
+  }),
+  createOpenAIClient: () => null,
+  GOALTREE_SYSTEM_PROMPT: 'Test prompt',
+  DEFAULT_CHAT_MODEL: 'gpt-4',
+}))
+
+// Mock useChat from @ai-sdk/react
+vi.mock('@ai-sdk/react', () => ({
+  useChat: () => ({
+    messages: [],
+    input: '',
+    handleInputChange: vi.fn(),
+    handleSubmit: vi.fn(),
+    isLoading: false,
+    error: null,
+    setMessages: vi.fn(),
+  }),
+}))
+
+// Helper to create mock nodes
+function createMockGoal(overrides: Partial<TreeNodeWithChildren> = {}): TreeNodeWithChildren {
+  return {
+    id: 1,
+    title: 'Test Goal',
+    nodeType: 'goal',
+    status: 'active',
+    type: 'goal',
+    createdAt: new Date(),
+    children: [],
+    ...overrides,
+  }
+}
+
+describe('AppLayout', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockHookState = {
+      rootGoals: [],
+      isLoading: false,
+      error: null,
+      isInitialized: true,
+    }
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  describe('rendering', () => {
+    it('renders the layout container', () => {
+      render(<AppLayout />)
+      expect(screen.getByTestId('app-layout')).toBeInTheDocument()
+    })
+
+    it('renders the main content area', () => {
+      render(<AppLayout />)
+      expect(screen.getByTestId('app-layout-content')).toBeInTheDocument()
+      expect(screen.getByTestId('app-layout-main')).toBeInTheDocument()
+    })
+
+    it('renders the goal tree view inside main area', () => {
+      const goal = createMockGoal({ id: 1, title: 'Test Goal' })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<AppLayout />)
+      expect(screen.getByTestId('goal-tree-view')).toBeInTheDocument()
+    })
+
+    it('applies custom className', () => {
+      render(<AppLayout className="custom-layout-class" />)
+      expect(screen.getByTestId('app-layout')).toHaveClass('custom-layout-class')
+    })
+  })
+
+  describe('header', () => {
+    it('renders header when provided', () => {
+      render(
+        <AppLayout
+          header={<h1 data-testid="custom-header">GoalTree</h1>}
+        />
+      )
+
+      expect(screen.getByTestId('app-layout-header')).toBeInTheDocument()
+      expect(screen.getByTestId('custom-header')).toBeInTheDocument()
+      expect(screen.getByText('GoalTree')).toBeInTheDocument()
+    })
+
+    it('does not render header when not provided', () => {
+      render(<AppLayout />)
+      expect(screen.queryByTestId('app-layout-header')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('chat sidebar', () => {
+    it('renders the chat sidebar toggle button when closed', () => {
+      render(<AppLayout defaultChatOpen={false} />)
+      expect(screen.getByTestId('chat-sidebar-toggle')).toBeInTheDocument()
+    })
+
+    it('opens chat sidebar when toggle is clicked', async () => {
+      render(<AppLayout defaultChatOpen={false} />)
+
+      const toggleButton = screen.getByTestId('chat-sidebar-toggle')
+      fireEvent.click(toggleButton)
+
+      await waitFor(() => {
+        expect(screen.getByTestId('chat-sidebar')).toBeInTheDocument()
+      })
+    })
+
+    it('starts with chat open when defaultChatOpen is true', async () => {
+      render(<AppLayout defaultChatOpen={true} />)
+
+      await waitFor(() => {
+        expect(screen.getByTestId('chat-sidebar')).toBeInTheDocument()
+      })
+    })
+
+    it('calls onChatOpenChange when chat state changes', async () => {
+      const onChatOpenChange = vi.fn()
+      render(
+        <AppLayout
+          defaultChatOpen={false}
+          onChatOpenChange={onChatOpenChange}
+        />
+      )
+
+      const toggleButton = screen.getByTestId('chat-sidebar-toggle')
+      fireEvent.click(toggleButton)
+
+      await waitFor(() => {
+        expect(onChatOpenChange).toHaveBeenCalledWith(true)
+      })
+    })
+
+    it('respects controlled chatOpen prop', async () => {
+      const { rerender } = render(
+        <AppLayout chatOpen={false} />
+      )
+
+      // Chat should be closed (toggle visible)
+      expect(screen.getByTestId('chat-sidebar-toggle')).toBeInTheDocument()
+
+      // Rerender with chat open
+      rerender(<AppLayout chatOpen={true} />)
+
+      await waitFor(() => {
+        expect(screen.getByTestId('chat-sidebar')).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('goal tree interaction callbacks', () => {
+    it('calls onSelectNode when a node is selected', () => {
+      const onSelectNode = vi.fn()
+      const goal = createMockGoal({ id: 1, title: 'Selectable Goal' })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<AppLayout onSelectNode={onSelectNode} />)
+
+      fireEvent.click(screen.getByTestId('goal-row-1'))
+
+      expect(onSelectNode).toHaveBeenCalledWith(goal)
+    })
+
+    it('calls onAddChild when add child is clicked', () => {
+      const onAddChild = vi.fn()
+      const goal = createMockGoal({ id: 1 })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<AppLayout onAddChild={onAddChild} />)
+
+      fireEvent.click(screen.getByTestId('goal-add-child-button-1'))
+
+      expect(onAddChild).toHaveBeenCalledWith(goal)
+    })
+
+    it('passes selectedNodeId to GoalTreeView', () => {
+      const goal = createMockGoal({ id: 1 })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<AppLayout selectedNodeId={1} />)
+
+      // The selected goal should have the selected styling
+      const row = screen.getByTestId('goal-row-1')
+      expect(row).toHaveClass('ring-2')
+    })
+  })
+
+  describe('goalTreeViewProps', () => {
+    it('passes goalTreeViewProps to GoalTreeView', () => {
+      const goal = createMockGoal({ id: 1 })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(
+        <AppLayout
+          goalTreeViewProps={{
+            showToolbar: false,
+          }}
+        />
+      )
+
+      expect(screen.queryByTestId('goal-tree-view-toolbar')).not.toBeInTheDocument()
+    })
+
+    it('passes initialExpandState to GoalTreeView', () => {
+      const childGoal = createMockGoal({ id: 2, title: 'Child Goal' })
+      const parentGoal = createMockGoal({
+        id: 1,
+        title: 'Parent Goal',
+        children: [childGoal],
+      })
+      mockHookState = {
+        rootGoals: [parentGoal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(
+        <AppLayout
+          goalTreeViewProps={{
+            initialExpandState: 'expanded',
+          }}
+        />
+      )
+
+      // Child should be visible because expanded
+      expect(screen.getByTestId('goal-node-2')).toBeInTheDocument()
+    })
+  })
+
+  describe('layout structure', () => {
+    it('has correct flex layout structure', () => {
+      render(<AppLayout />)
+
+      const layout = screen.getByTestId('app-layout')
+      expect(layout).toHaveClass('flex')
+      expect(layout).toHaveClass('h-screen')
+      expect(layout).toHaveClass('flex-col')
+
+      const content = screen.getByTestId('app-layout-content')
+      expect(content).toHaveClass('flex')
+      expect(content).toHaveClass('flex-1')
+    })
+
+    it('has main area as flex-1 for proper sizing', () => {
+      render(<AppLayout />)
+
+      const main = screen.getByTestId('app-layout-main')
+      expect(main).toHaveClass('flex-1')
+    })
+  })
+
+  describe('empty state', () => {
+    it('shows empty state when no goals exist', () => {
+      mockHookState = {
+        rootGoals: [],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<AppLayout />)
+
+      expect(screen.getByTestId('goal-tree-view-empty')).toBeInTheDocument()
+      expect(screen.getByText('No goals yet')).toBeInTheDocument()
+    })
+  })
+
+  describe('loading state', () => {
+    it('shows loading state when tree is loading', () => {
+      mockHookState = {
+        rootGoals: [],
+        isLoading: true,
+        error: null,
+        isInitialized: false,
+      }
+
+      render(<AppLayout />)
+
+      expect(screen.getByTestId('goal-tree-view-loading')).toBeInTheDocument()
+    })
+  })
+
+  describe('error state', () => {
+    it('shows error state when tree has an error', () => {
+      mockHookState = {
+        rootGoals: [],
+        isLoading: false,
+        error: 'Database connection failed',
+        isInitialized: true,
+      }
+
+      render(<AppLayout />)
+
+      expect(screen.getByTestId('goal-tree-view-error')).toBeInTheDocument()
+      expect(screen.getByText('Database connection failed')).toBeInTheDocument()
+    })
+  })
+
+  describe('accessibility', () => {
+    it('has main element for landmark navigation', () => {
+      render(<AppLayout />)
+
+      const main = screen.getByTestId('app-layout-main')
+      expect(main.tagName).toBe('MAIN')
+    })
+
+    it('has header element when header is provided', () => {
+      render(
+        <AppLayout header={<h1>GoalTree</h1>} />
+      )
+
+      const header = screen.getByTestId('app-layout-header')
+      expect(header.tagName).toBe('HEADER')
+    })
+  })
+})
