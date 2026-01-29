@@ -498,6 +498,86 @@ describe('AddChildDialog', () => {
     })
   })
 
+  describe('optional parentId in callback signatures', () => {
+    it('includes parentId in onAddMilestone when parentNode exists', async () => {
+      render(<AddChildDialog {...defaultProps} />)
+
+      fireEvent.click(screen.getByTestId('type-option-milestone'))
+      fireEvent.change(screen.getByTestId('title-input'), { target: { value: 'Test Milestone' } })
+      fireEvent.click(screen.getByTestId('submit-button'))
+
+      await waitFor(() => {
+        expect(mockOnAddMilestone).toHaveBeenCalledWith({
+          title: 'Test Milestone',
+          description: undefined,
+          parentId: 1,
+        })
+      })
+    })
+
+    it('includes parentId in onAddRequirement when parentNode exists', async () => {
+      render(<AddChildDialog {...defaultProps} />)
+
+      fireEvent.click(screen.getByTestId('type-option-requirement'))
+      fireEvent.change(screen.getByTestId('title-input'), { target: { value: 'Test Requirement' } })
+      fireEvent.click(screen.getByTestId('submit-button'))
+
+      await waitFor(() => {
+        expect(mockOnAddRequirement).toHaveBeenCalledWith({
+          title: 'Test Requirement',
+          description: undefined,
+          parentId: 1,
+        })
+      })
+    })
+
+    it('includes parentId in onAddTask when parentNode exists', async () => {
+      render(<AddChildDialog {...defaultProps} />)
+
+      fireEvent.change(screen.getByTestId('title-input'), { target: { value: 'Test Task' } })
+      fireEvent.click(screen.getByTestId('submit-button'))
+
+      await waitFor(() => {
+        expect(mockOnAddTask).toHaveBeenCalledWith({
+          title: 'Test Task',
+          description: undefined,
+          parentId: 1,
+          frequency: 'once',
+          measurement: undefined,
+        })
+      })
+    })
+
+    it('includes parentId in onAddGoal when parentNode exists', async () => {
+      render(<AddChildDialog {...defaultProps} />)
+
+      fireEvent.click(screen.getByTestId('type-option-goal'))
+      fireEvent.change(screen.getByTestId('title-input'), { target: { value: 'Test Goal' } })
+      fireEvent.click(screen.getByTestId('submit-button'))
+
+      await waitFor(() => {
+        expect(mockOnAddGoal).toHaveBeenCalledWith({
+          title: 'Test Goal',
+          description: undefined,
+          parentId: 1,
+        })
+      })
+    })
+
+    it('omits parentId in onAddGoal when parentNode is null', async () => {
+      render(<AddChildDialog {...defaultProps} parentNode={null} />)
+
+      fireEvent.change(screen.getByTestId('title-input'), { target: { value: 'Root Goal' } })
+      fireEvent.click(screen.getByTestId('submit-button'))
+
+      await waitFor(() => {
+        const calledWith = mockOnAddGoal.mock.calls[0][0]
+        expect(calledWith.title).toBe('Root Goal')
+        expect(calledWith).not.toHaveProperty('parentId')
+      })
+    })
+  })
+
   describe('accessibility', () => {
     it('has correct role for type selector', () => {
       render(<AddChildDialog {...defaultProps} />)

@@ -90,17 +90,17 @@ export interface AddChildDialogProps {
   onOpenChange: (open: boolean) => void
   /** The parent node to add a child to (null = create root goal) */
   parentNode: TreeNodeWithChildren | null
-  /** Callback to add a goal/milestone/requirement (parentId is optional for root goals) */
+  /** Callback to add a goal (parentId is optional for root goals) */
   onAddGoal?: (input: { title: string; description?: string; parentId?: number }) => Promise<number>
-  /** Callback to add a milestone */
-  onAddMilestone?: (input: { title: string; description?: string; parentId: number }) => Promise<number>
-  /** Callback to add a requirement */
-  onAddRequirement?: (input: { title: string; description?: string; parentId: number }) => Promise<number>
-  /** Callback to add a task */
+  /** Callback to add a milestone (parentId is optional for flexibility) */
+  onAddMilestone?: (input: { title: string; description?: string; parentId?: number }) => Promise<number>
+  /** Callback to add a requirement (parentId is optional for flexibility) */
+  onAddRequirement?: (input: { title: string; description?: string; parentId?: number }) => Promise<number>
+  /** Callback to add a task (parentId is optional for flexibility) */
   onAddTask?: (input: {
     title: string
     description?: string
-    parentId: number
+    parentId?: number
     frequency: TaskFrequency
     measurement?: string
   }) => Promise<number>
@@ -183,15 +183,14 @@ export function AddChildDialog({
             await onAddGoal?.(baseInput)
             break
           case 'milestone':
-            await onAddMilestone?.({ ...baseInput, parentId: parentNode!.id })
+            await onAddMilestone?.(baseInput)
             break
           case 'requirement':
-            await onAddRequirement?.({ ...baseInput, parentId: parentNode!.id })
+            await onAddRequirement?.(baseInput)
             break
           case 'task':
             await onAddTask?.({
               ...baseInput,
-              parentId: parentNode!.id,
               frequency,
               measurement: measurement.trim() || undefined,
             })
