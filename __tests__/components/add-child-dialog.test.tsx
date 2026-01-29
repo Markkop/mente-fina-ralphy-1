@@ -482,6 +482,20 @@ describe('AddChildDialog', () => {
       // Should show "Add Goal" since type selector is hidden and defaults to goal
       expect(screen.getByTestId('submit-button')).toHaveTextContent('Add Goal')
     })
+
+    it('only allows Goal type at root level (type selector not rendered)', () => {
+      render(<AddChildDialog {...defaultProps} parentNode={null} />)
+
+      // Verify the type selector is not rendered at all
+      expect(screen.queryByTestId('type-selector')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('type-option-task')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('type-option-milestone')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('type-option-requirement')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('type-option-goal')).not.toBeInTheDocument()
+      
+      // Submit button should only show Goal option
+      expect(screen.getByTestId('submit-button')).toHaveTextContent('Add Goal')
+    })
   })
 
   describe('accessibility', () => {
