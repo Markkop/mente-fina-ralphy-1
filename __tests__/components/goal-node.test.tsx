@@ -48,6 +48,20 @@ function createMockMilestone(overrides: Partial<TreeNodeWithChildren> = {}): Tre
   }
 }
 
+// Helper to create a mock requirement node
+function createMockRequirement(overrides: Partial<TreeNodeWithChildren> = {}): TreeNodeWithChildren {
+  return {
+    id: 60,
+    title: 'Test Requirement',
+    nodeType: 'requirement',
+    status: 'active',
+    type: 'requirement',
+    createdAt: new Date(),
+    children: [],
+    ...overrides,
+  }
+}
+
 describe('GoalNode', () => {
   describe('rendering', () => {
     it('renders a goal node with title', () => {
@@ -444,6 +458,37 @@ describe('GoalNode', () => {
       // Task and milestone should be rendered via NodeItem
       expect(screen.getByTestId('node-item-38')).toBeInTheDocument()
       expect(screen.getByTestId('node-item-39')).toBeInTheDocument()
+    })
+
+    it('renders requirement children using RequirementNode', () => {
+      const requirement = createMockRequirement({ id: 42, title: 'Test Requirement' })
+      const goal = createMockGoal({
+        id: 38,
+        children: [requirement],
+      })
+      render(<GoalNode node={goal} defaultExpanded={true} />)
+
+      // Requirement should be rendered via RequirementNode, not NodeItem
+      expect(screen.getByTestId('requirement-node-42')).toBeInTheDocument()
+      expect(screen.queryByTestId('node-item-42')).not.toBeInTheDocument()
+    })
+
+    it('renders mixed children using appropriate components', () => {
+      const task = createMockTask({ id: 43 })
+      const requirement = createMockRequirement({ id: 44 })
+      const childGoal = createMockGoal({ id: 45, title: 'Child Goal' })
+      const goal = createMockGoal({
+        id: 39,
+        children: [task, requirement, childGoal],
+      })
+      render(<GoalNode node={goal} defaultExpanded={true} />)
+
+      // Task should use NodeItem
+      expect(screen.getByTestId('node-item-43')).toBeInTheDocument()
+      // Requirement should use RequirementNode
+      expect(screen.getByTestId('requirement-node-44')).toBeInTheDocument()
+      // Goal should use GoalNode
+      expect(screen.getByTestId('goal-node-45')).toBeInTheDocument()
     })
   })
 

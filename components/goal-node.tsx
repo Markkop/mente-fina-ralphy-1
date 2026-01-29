@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import type { TreeNodeWithChildren } from '@/lib/goal-store'
 import { NodeItem } from './node-item'
+import { RequirementNode } from './requirement-node'
 
 /**
  * Props for the GoalNode component
@@ -323,7 +324,7 @@ export function GoalNode({
           data-testid={`goal-children-container-${node.id}`}
         >
           {node.children.map((child) => {
-            // Use GoalNode for goal children, NodeItem for others
+            // Use GoalNode for goal children, RequirementNode for requirements, NodeItem for others
             if (child.nodeType === 'goal') {
               return (
                 <GoalNode
@@ -335,6 +336,17 @@ export function GoalNode({
                   onSelect={onSelect}
                   onAddChild={onAddChild}
                   onDelete={onDelete}
+                  selectedNodeId={selectedNodeId}
+                />
+              )
+            }
+            if (child.nodeType === 'requirement') {
+              return (
+                <RequirementNode
+                  key={`requirement-${child.id}`}
+                  node={child}
+                  depth={depth + 1}
+                  onSelect={onSelect}
                   selectedNodeId={selectedNodeId}
                 />
               )

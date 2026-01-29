@@ -1,0 +1,109 @@
+'use client'
+
+import { useCallback } from 'react'
+import { Info } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import type { TreeNodeWithChildren } from '@/lib/goal-store'
+
+/**
+ * Props for the RequirementNode component
+ */
+export interface RequirementNodeProps {
+  /** The requirement node to render */
+  node: TreeNodeWithChildren
+  /** Depth level for indentation (default: 0) */
+  depth?: number
+  /** Callback when the requirement is selected */
+  onSelect?: (node: TreeNodeWithChildren) => void
+  /** Currently selected node id */
+  selectedNodeId?: number | null
+}
+
+/**
+ * RequirementNode Component - A distinct visual variant for requirement nodes
+ *
+ * This component provides informational styling specifically for requirements.
+ * Requirements are non-checkable nodes that provide context or information
+ * needed to achieve a goal. They feature an amber/yellow color scheme to
+ * distinguish them from actionable tasks.
+ */
+export function RequirementNode({
+  node,
+  depth = 0,
+  onSelect,
+  selectedNodeId,
+}: RequirementNodeProps) {
+  const isSelected = selectedNodeId === node.id
+
+  const handleSelect = useCallback(() => {
+    onSelect?.(node)
+  }, [node, onSelect])
+
+  return (
+    <div className="w-full" data-testid={`requirement-node-${node.id}`}>
+      {/* Requirement Card */}
+      <div
+        className={cn(
+          'group flex items-center gap-3 rounded-lg border px-4 py-3 transition-all duration-200 cursor-pointer',
+          // Informational amber styling
+          'bg-gradient-to-r from-amber-50/80 to-white dark:from-amber-950/30 dark:to-gray-900',
+          'border-amber-200 dark:border-amber-800',
+          // Hover effect
+          'hover:border-amber-400 dark:hover:border-amber-600 hover:shadow-sm',
+          // Selected state
+          isSelected && 'ring-2 ring-primary ring-offset-1 border-amber-500 dark:border-amber-400'
+        )}
+        style={{ marginLeft: depth * 24 }}
+        onClick={handleSelect}
+        role="treeitem"
+        aria-selected={isSelected}
+        data-testid={`requirement-row-${node.id}`}
+      >
+        {/* Info Icon - non-interactive, informational indicator */}
+        <div
+          className={cn(
+            'flex h-6 w-6 items-center justify-center rounded-md',
+            'bg-amber-100 dark:bg-amber-900/50'
+          )}
+          data-testid={`requirement-icon-${node.id}`}
+        >
+          <Info className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+        </div>
+
+        {/* Requirement Content */}
+        <div className="flex-1 min-w-0">
+          <span
+            className="block text-sm font-medium truncate"
+            data-testid={`requirement-title-${node.id}`}
+          >
+            {node.title}
+          </span>
+          {/* Description (optional) */}
+          {node.description && (
+            <span
+              className="block text-xs text-muted-foreground truncate mt-0.5"
+              data-testid={`requirement-description-${node.id}`}
+            >
+              {node.description}
+            </span>
+          )}
+        </div>
+
+        {/* Informational Badge */}
+        <span
+          className={cn(
+            'flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
+            'bg-amber-100 dark:bg-amber-900/40',
+            'text-amber-700 dark:text-amber-300'
+          )}
+          data-testid={`requirement-badge-${node.id}`}
+        >
+          <Info className="h-3 w-3 text-amber-500" />
+          Info
+        </span>
+      </div>
+    </div>
+  )
+}
+
+export default RequirementNode
