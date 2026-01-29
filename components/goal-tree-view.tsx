@@ -295,7 +295,7 @@ export function GoalTreeView({
             </Button>
             <Button
               variant="ghost"
-              size="icon"
+              size="icon-sm"
               onClick={handleRefresh}
               disabled={isLoading}
               aria-label="Refresh tree"

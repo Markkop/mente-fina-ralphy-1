@@ -962,4 +962,67 @@ describe('GoalTreeView', () => {
       expect(textSpan).toHaveClass('sm:inline')
     })
   })
+
+  describe('toolbar button styling consistency', () => {
+    it('all toolbar buttons have consistent small sizing', () => {
+      const goal = createMockGoal({ id: 1 })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<GoalTreeView onNewGoal={() => {}} />)
+
+      // All buttons should use consistent sizing (sm for text buttons, icon-sm for icon-only)
+      const expandButton = screen.getByTestId('goal-tree-view-expand-all')
+      const collapseButton = screen.getByTestId('goal-tree-view-collapse-all')
+      const refreshButton = screen.getByTestId('goal-tree-view-refresh')
+      const newGoalButton = screen.getByTestId('goal-tree-view-new-goal')
+
+      // Text buttons should have h-8 (sm size)
+      expect(expandButton).toHaveAttribute('data-size', 'sm')
+      expect(collapseButton).toHaveAttribute('data-size', 'sm')
+      expect(newGoalButton).toHaveAttribute('data-size', 'sm')
+
+      // Icon-only button should have icon-sm (size-8) to match other button heights
+      expect(refreshButton).toHaveAttribute('data-size', 'icon-sm')
+    })
+
+    it('New Goal button uses default variant as primary action', () => {
+      const goal = createMockGoal({ id: 1 })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<GoalTreeView onNewGoal={() => {}} />)
+
+      const newGoalButton = screen.getByTestId('goal-tree-view-new-goal')
+      expect(newGoalButton).toHaveAttribute('data-variant', 'default')
+    })
+
+    it('secondary toolbar buttons use ghost variant', () => {
+      const goal = createMockGoal({ id: 1 })
+      mockHookState = {
+        rootGoals: [goal],
+        isLoading: false,
+        error: null,
+        isInitialized: true,
+      }
+
+      render(<GoalTreeView />)
+
+      const expandButton = screen.getByTestId('goal-tree-view-expand-all')
+      const collapseButton = screen.getByTestId('goal-tree-view-collapse-all')
+      const refreshButton = screen.getByTestId('goal-tree-view-refresh')
+
+      expect(expandButton).toHaveAttribute('data-variant', 'ghost')
+      expect(collapseButton).toHaveAttribute('data-variant', 'ghost')
+      expect(refreshButton).toHaveAttribute('data-variant', 'ghost')
+    })
+  })
 })
