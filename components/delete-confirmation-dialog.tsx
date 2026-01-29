@@ -116,9 +116,14 @@ export function DeleteConfirmationDialog({
           </DialogTitle>
           <DialogDescription data-testid="delete-dialog-description">
             Are you sure you want to delete{' '}
-            <span className="font-medium text-foreground">
+            <span className="font-medium text-foreground" data-testid="node-title">
               &quot;{node?.title || 'this item'}&quot;
             </span>
+            {descendantCount > 0 && (
+              <span data-testid="child-count-inline">
+                {' '}and its {descendantCount} {descendantCount === 1 ? 'child' : 'children'}
+              </span>
+            )}
             ? This action cannot be undone.
           </DialogDescription>
         </DialogHeader>

@@ -131,6 +131,36 @@ describe('DeleteConfirmationDialog', () => {
       render(<DeleteConfirmationDialog {...defaultProps} />)
 
       expect(screen.getByTestId('delete-dialog-description')).toHaveTextContent('"Test Goal"')
+      expect(screen.getByTestId('node-title')).toHaveTextContent('"Test Goal"')
+    })
+
+    it('shows child count inline when node has children', () => {
+      render(
+        <DeleteConfirmationDialog
+          {...defaultProps}
+          node={createMockNodeWithChildren()}
+        />
+      )
+
+      expect(screen.getByTestId('child-count-inline')).toHaveTextContent('and its 3 children')
+    })
+
+    it('shows singular "child" when node has one child', () => {
+      const nodeWithOneChild = createMockNode({
+        children: [
+          createMockNode({ id: 2, title: 'Child Task', nodeType: 'task' }),
+        ],
+      })
+
+      render(<DeleteConfirmationDialog {...defaultProps} node={nodeWithOneChild} />)
+
+      expect(screen.getByTestId('child-count-inline')).toHaveTextContent('and its 1 child')
+    })
+
+    it('does not show child count inline when node has no children', () => {
+      render(<DeleteConfirmationDialog {...defaultProps} />)
+
+      expect(screen.queryByTestId('child-count-inline')).not.toBeInTheDocument()
     })
 
     it('shows action buttons', () => {
