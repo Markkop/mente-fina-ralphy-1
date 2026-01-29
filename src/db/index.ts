@@ -84,6 +84,18 @@ export class GoalTreeDatabase extends Dexie {
 // Singleton database instance
 export const db = new GoalTreeDatabase()
 
+/**
+ * Clears all data from the database (goals, tasks, and settings)
+ * Used for debugging and resetting the application state
+ */
+export async function clearAllData(): Promise<void> {
+  await db.transaction('rw', [db.goals, db.tasks, db.settings], async () => {
+    await db.goals.clear()
+    await db.tasks.clear()
+    await db.settings.clear()
+  })
+}
+
 // Export repository
 export { GoalRepository, goalRepository } from './goal-repository'
 export type { CreateGoalInput, CreateTaskInput, CreateNodeInput, TreeNode } from './goal-repository'

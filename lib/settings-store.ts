@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { db, type Settings } from '@/src/db'
+import { db, type Settings, clearAllData as clearDatabaseData } from '@/src/db'
 
 /**
  * Default settings values
@@ -37,6 +37,10 @@ interface SettingsStoreActions {
   resetToDefaults: () => Promise<void>
   /** Get the current settings or defaults */
   getSettingsOrDefaults: () => Omit<Settings, 'id'>
+  /** Clear all application data from the database */
+  clearAllData: () => Promise<void>
+  /** Reset store to initial state (used after clearing data) */
+  reset: () => void
 }
 
 type SettingsStore = SettingsStoreState & SettingsStoreActions
@@ -153,6 +157,31 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       }
     }
     return DEFAULT_SETTINGS
+  },
+
+  clearAllData: async () => {
+    try {
+      await clearDatabaseData()
+      set({
+        settings: null,
+        isLoading: false,
+        error: null,
+        isInitialized: false,
+      })
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to clear data'
+      set({ error: errorMessage })
+      throw error
+    }
+  },
+
+  reset: () => {
+    set({
+      settings: null,
+      isLoading: false,
+      error: null,
+      isInitialized: false,
+    })
   },
 }))
 

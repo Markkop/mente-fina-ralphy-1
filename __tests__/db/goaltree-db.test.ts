@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import {
   GoalTreeDatabase,
   db,
+  clearAllData,
   type Goal,
   type Task,
   type Settings,
@@ -335,6 +336,46 @@ describe('GoalTreeDatabase', () => {
     it('exports TaskFrequency type', () => {
       const frequencies: TaskFrequency[] = ['once', 'daily', 'weekly', 'custom']
       expect(frequencies).toHaveLength(4)
+    })
+  })
+
+  describe('clearAllData', () => {
+    it('clears all tables in the database', async () => {
+      // Add some data to all tables
+      const goalId = await db.goals.add({
+        title: 'Test Goal',
+        type: 'goal',
+        status: 'active',
+        createdAt: new Date(),
+      })
+
+      await db.tasks.add({
+        parentId: goalId,
+        title: 'Test Task',
+        frequency: 'daily',
+        isCompleted: false,
+        createdAt: new Date(),
+      })
+
+      await db.settings.add({
+        workHoursStart: '09:00',
+        workHoursEnd: '17:00',
+        sleepStart: '22:00',
+        sleepEnd: '07:00',
+      })
+
+      // Verify data exists
+      expect(await db.goals.count()).toBeGreaterThan(0)
+      expect(await db.tasks.count()).toBeGreaterThan(0)
+      expect(await db.settings.count()).toBeGreaterThan(0)
+
+      // Clear all data
+      await clearAllData()
+
+      // Verify all tables are empty
+      expect(await db.goals.count()).toBe(0)
+      expect(await db.tasks.count()).toBe(0)
+      expect(await db.settings.count()).toBe(0)
     })
   })
 })

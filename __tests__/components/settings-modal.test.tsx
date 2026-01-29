@@ -16,6 +16,8 @@ const mockInitialize = vi.fn()
 const mockUpdateSettings = vi.fn()
 const mockResetToDefaults = vi.fn()
 const mockGetSettingsOrDefaults = vi.fn()
+const mockClearAllData = vi.fn()
+const mockResetSettings = vi.fn()
 
 vi.mock('@/lib/settings-store', () => ({
   useSettingsStore: () => ({
@@ -27,6 +29,8 @@ vi.mock('@/lib/settings-store', () => ({
     updateSettings: mockUpdateSettings,
     resetToDefaults: mockResetToDefaults,
     getSettingsOrDefaults: mockGetSettingsOrDefaults,
+    clearAllData: mockClearAllData,
+    reset: mockResetSettings,
   }),
   DEFAULT_SETTINGS: {
     workHoursStart: '09:00',
@@ -35,6 +39,24 @@ vi.mock('@/lib/settings-store', () => ({
     sleepEnd: '07:00',
   },
 }))
+
+const mockResetGoalStore = vi.fn()
+
+vi.mock('@/lib/goal-store', () => ({
+  useGoalStore: (selector: (state: { reset: () => void }) => unknown) => {
+    if (selector) {
+      return selector({ reset: mockResetGoalStore })
+    }
+    return { reset: mockResetGoalStore }
+  },
+}))
+
+// Mock window.location.reload
+const mockReload = vi.fn()
+Object.defineProperty(window, 'location', {
+  value: { reload: mockReload },
+  writable: true,
+})
 
 describe('SettingsModal', () => {
   beforeEach(() => {
@@ -55,6 +77,7 @@ describe('SettingsModal', () => {
     })
     mockUpdateSettings.mockResolvedValue(undefined)
     mockResetToDefaults.mockResolvedValue(undefined)
+    mockClearAllData.mockResolvedValue(undefined)
   })
 
   afterEach(() => {
@@ -383,6 +406,99 @@ describe('SettingsModal', () => {
       render(<SettingsModal />)
 
       expect(screen.getByTestId('settings-trigger')).toHaveAccessibleName('Open settings')
+    })
+  })
+
+  describe('clear all data', () => {
+    beforeEach(async () => {
+      render(<SettingsModal />)
+      fireEvent.click(screen.getByTestId('settings-trigger'))
+      await waitFor(() => {
+        expect(screen.getByTestId('settings-modal')).toBeInTheDocument()
+      })
+    })
+
+    it('shows clear data button', () => {
+      expect(screen.getByTestId('clear-data-button')).toBeInTheDocument()
+      expect(screen.getByTestId('clear-data-button')).toHaveTextContent('Reset/Clear All Data')
+    })
+
+    it('shows confirmation dialog when clear data button is clicked', async () => {
+      fireEvent.click(screen.getByTestId('clear-data-button'))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('clear-data-confirm')).toBeInTheDocument()
+      })
+      expect(screen.getByText('Are you sure?')).toBeInTheDocument()
+      expect(screen.getByText(/This will permanently delete/)).toBeInTheDocument()
+    })
+
+    it('hides confirmation dialog when cancel is clicked', async () => {
+      fireEvent.click(screen.getByTestId('clear-data-button'))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('clear-data-confirm')).toBeInTheDocument()
+      })
+
+      fireEvent.click(screen.getByTestId('clear-data-cancel'))
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('clear-data-confirm')).not.toBeInTheDocument()
+      })
+      expect(screen.getByTestId('clear-data-button')).toBeInTheDocument()
+    })
+
+    it('calls clearAllData and resets stores when confirmed', async () => {
+      fireEvent.click(screen.getByTestId('clear-data-button'))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('clear-data-confirm')).toBeInTheDocument()
+      })
+
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('clear-data-confirm-button'))
+      })
+
+      await waitFor(() => {
+        expect(mockClearAllData).toHaveBeenCalled()
+      })
+      expect(mockResetGoalStore).toHaveBeenCalled()
+      expect(mockReload).toHaveBeenCalled()
+    })
+
+    it('shows loading state while clearing', async () => {
+      mockClearAllData.mockImplementation(
+        () => new Promise((resolve) => setTimeout(resolve, 100))
+      )
+
+      fireEvent.click(screen.getByTestId('clear-data-button'))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('clear-data-confirm')).toBeInTheDocument()
+      })
+
+      fireEvent.click(screen.getByTestId('clear-data-confirm-button'))
+
+      expect(screen.getByTestId('clear-data-confirm-button')).toHaveTextContent('Clearing...')
+      expect(screen.getByTestId('clear-data-confirm-button')).toBeDisabled()
+    })
+
+    it('shows error when clearing fails', async () => {
+      mockClearAllData.mockRejectedValueOnce(new Error('Failed to clear'))
+
+      fireEvent.click(screen.getByTestId('clear-data-button'))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('clear-data-confirm')).toBeInTheDocument()
+      })
+
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('clear-data-confirm-button'))
+      })
+
+      await waitFor(() => {
+        expect(screen.getByTestId('settings-error')).toHaveTextContent('Failed to clear')
+      })
     })
   })
 })

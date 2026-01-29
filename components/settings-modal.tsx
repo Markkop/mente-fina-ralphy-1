@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import { Settings, Clock, Moon, Sun, RotateCcw, Loader2 } from 'lucide-react'
+import { Settings, Clock, Moon, Sun, RotateCcw, Loader2, Trash2, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,6 +15,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { useSettingsStore, DEFAULT_SETTINGS } from '@/lib/settings-store'
+import { useGoalStore } from '@/lib/goal-store'
 
 /**
  * Props for the SettingsModal component
@@ -76,7 +77,11 @@ export function SettingsModal({
     initialize,
     updateSettings,
     getSettingsOrDefaults,
+    clearAllData,
   } = useSettingsStore()
+
+  // Goal store for resetting after clear
+  const resetGoalStore = useGoalStore((state) => state.reset)
 
   // Local state
   const [internalOpen, setInternalOpen] = useState(false)
@@ -86,6 +91,8 @@ export function SettingsModal({
   const [sleepEnd, setSleepEnd] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
+  const [isClearing, setIsClearing] = useState(false)
 
   // Controlled vs uncontrolled
   const isControlled = controlledOpen !== undefined
@@ -169,6 +176,24 @@ export function SettingsModal({
     setSleepEnd(DEFAULT_SETTINGS.sleepEnd)
     setError(null)
   }, [])
+
+  // Handle clear all data
+  const handleClearAllData = useCallback(async () => {
+    setIsClearing(true)
+    setError(null)
+
+    try {
+      await clearAllData()
+      resetGoalStore()
+      setShowClearConfirm(false)
+      handleOpenChange(false)
+      // Reload the page to ensure clean state
+      window.location.reload()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to clear data')
+      setIsClearing(false)
+    }
+  }, [clearAllData, resetGoalStore, handleOpenChange])
 
   // Check if values have changed from saved settings
   const hasChanges =
@@ -300,6 +325,72 @@ export function SettingsModal({
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Debug Section - Clear Data */}
+            <div className="space-y-4 border-t pt-4">
+              <div className="flex items-center gap-2">
+                <Trash2 className="h-5 w-5 text-destructive" />
+                <h3 className="font-medium">Debug</h3>
+              </div>
+
+              {!showClearConfirm ? (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => setShowClearConfirm(true)}
+                  disabled={isSubmitting || isClearing}
+                  className="w-full"
+                  data-testid="clear-data-button"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Reset/Clear All Data
+                </Button>
+              ) : (
+                <div
+                  className="rounded-lg border border-destructive bg-destructive/10 p-4 space-y-3"
+                  data-testid="clear-data-confirm"
+                >
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="font-medium text-destructive">Are you sure?</p>
+                      <p className="text-sm text-muted-foreground">
+                        This will permanently delete all your goals, tasks, and settings. This action cannot be undone.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowClearConfirm(false)}
+                      disabled={isClearing}
+                      data-testid="clear-data-cancel"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleClearAllData}
+                      disabled={isClearing}
+                      data-testid="clear-data-confirm-button"
+                    >
+                      {isClearing ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Clearing...
+                        </>
+                      ) : (
+                        'Yes, Clear All Data'
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Error Message */}

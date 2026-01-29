@@ -69,6 +69,8 @@ interface GoalStoreActions {
   getNode: (id: number, nodeType: 'goal' | 'task') => TreeNodeWithChildren | undefined
   /** Get children of a node */
   getChildren: (parentId: number) => TreeNodeWithChildren[]
+  /** Reset store to initial state (used after clearing data) */
+  reset: () => void
 }
 
 type GoalStore = GoalStoreState & GoalStoreActions
@@ -318,6 +320,16 @@ export function createGoalStore(database?: GoalTreeDatabase) {
     getChildren: (parentId) => {
       const node = get().nodesById.get(nodeKey(parentId, 'goal'))
       return node?.children ?? []
+    },
+
+    reset: () => {
+      set({
+        rootGoals: [],
+        nodesById: new Map(),
+        isLoading: false,
+        error: null,
+        isInitialized: false,
+      })
     },
   }))
 }
