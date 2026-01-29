@@ -1,0 +1,39 @@
+# Ralphy Configuration
+# https://github.com/michaelshimeles/ralphy
+
+# Project info (auto-detected, edit if needed)
+project:
+  name: "GoalTree"
+  language: "TypeScript"
+  framework: "Next.js"
+  description: "AI-powered goal planning app - local-first web application that helps users transform vague aspirations into structured, actionable plans through a hierarchical tree interface"
+
+# Commands (auto-detected from package.json/pyproject.toml)
+commands:
+  test: ""
+  lint: "npm run lint"
+  build: "npm run build"
+
+# Rules - instructions the AI MUST follow
+# These are injected into every prompt
+rules:
+  - "Always use TypeScript strict mode"
+  - "Use Next.js App Router patterns (not Pages Router)"
+  - "Follow local-first architecture: all data stored in IndexedDB via Dexie.js, never use external backend APIs for data storage"
+  - "Use Zustand for global state management, synced with Dexie"
+  - "Use ShadCN/UI components for consistent UI styling"
+  - "OpenAI API key must be stored in LocalStorage (never sent to backend)"
+  - "Use Vercel AI SDK (client-side) for chat integration"
+  - "Respect the hierarchical data structure: Goals (can nest), Requirements (informational), Milestones (checkpoints), Tasks (actionable with frequency)"
+  - "All user data is self-verified - no external tracking integrations"
+  - "Privacy first: all operations happen client-side"
+  - "Use lucide-react for icons"
+  - "Follow the implementation checklist in PRD.md for feature development order"
+
+# Boundaries - files/folders the AI should not modify
+boundaries:
+  never_touch:
+    # Examples:
+    # - "src/legacy/**"
+    # - "migrations/**"
+    # - "*.lock"
