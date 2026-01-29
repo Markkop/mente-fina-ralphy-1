@@ -299,6 +299,73 @@ describe('NodeItem', () => {
     })
   })
 
+  describe('Add Child button hover visibility', () => {
+    it('renders Add Child button with hover visibility classes on non-task nodes', () => {
+      const node = createMockNode({ id: 54, title: 'Goal Node' })
+      render(<NodeItem node={node} onAddChild={vi.fn()} />)
+
+      const addButton = screen.getByTestId('add-child-button-54')
+      expect(addButton).toBeInTheDocument()
+      
+      // The button should be inside a container with opacity-0 and group-hover:opacity-100
+      const actionsContainer = addButton.parentElement
+      expect(actionsContainer).toHaveClass('opacity-0')
+      expect(actionsContainer).toHaveClass('group-hover:opacity-100')
+    })
+
+    it('renders Add Child button with hover visibility for milestone nodes', () => {
+      const node = createMockNode({
+        id: 55,
+        title: 'Milestone Node',
+        nodeType: 'milestone',
+        type: 'milestone',
+      })
+      render(<NodeItem node={node} onAddChild={vi.fn()} />)
+
+      const addButton = screen.getByTestId('add-child-button-55')
+      expect(addButton).toBeInTheDocument()
+
+      // Verify hover visibility classes are applied
+      const actionsContainer = addButton.parentElement
+      expect(actionsContainer).toHaveClass('opacity-0')
+      expect(actionsContainer).toHaveClass('group-hover:opacity-100')
+    })
+
+    it('renders Add Child button with hover visibility for requirement nodes', () => {
+      const node = createMockNode({
+        id: 56,
+        title: 'Requirement Node',
+        nodeType: 'requirement',
+        type: 'requirement',
+      })
+      render(<NodeItem node={node} onAddChild={vi.fn()} />)
+
+      const addButton = screen.getByTestId('add-child-button-56')
+      expect(addButton).toBeInTheDocument()
+
+      // Verify hover visibility classes are applied
+      const actionsContainer = addButton.parentElement
+      expect(actionsContainer).toHaveClass('opacity-0')
+      expect(actionsContainer).toHaveClass('group-hover:opacity-100')
+    })
+
+    it('node row has group class for hover state propagation', () => {
+      const node = createMockNode({ id: 57, title: 'Node with Group' })
+      render(<NodeItem node={node} onAddChild={vi.fn()} />)
+
+      const nodeRow = screen.getByTestId('node-row-57')
+      expect(nodeRow).toHaveClass('group')
+    })
+
+    it('Add Child button has correct aria-label for accessibility', () => {
+      const node = createMockNode({ id: 58, title: 'Accessible Node' })
+      render(<NodeItem node={node} onAddChild={vi.fn()} />)
+
+      const addButton = screen.getByTestId('add-child-button-58')
+      expect(addButton).toHaveAttribute('aria-label', 'Add child node')
+    })
+  })
+
   describe('selection', () => {
     it('applies selected styling when node is selected', () => {
       const node = createMockNode({ id: 31, title: 'Selected Node' })
