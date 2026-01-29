@@ -382,6 +382,7 @@ export function AddChildDialog({
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
+              aria-label="Cancel adding item"
               data-testid="cancel-button"
             >
               Cancel
@@ -389,6 +390,7 @@ export function AddChildDialog({
             <Button
               type="submit"
               disabled={isSubmitting || !title.trim()}
+              aria-label={isSubmitting ? `Adding ${selectedConfig.label}` : `Add ${selectedConfig.label}`}
               data-testid="submit-button"
             >
               {isSubmitting ? (

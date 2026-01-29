@@ -352,6 +352,7 @@ export function SuggestionCard({
           onClick={handleApply}
           disabled={isApplying}
           className="flex-1"
+          aria-label={isApplying ? 'Applying suggestion' : 'Apply AI suggestion'}
           data-testid="suggestion-apply-button"
         >
           {isApplying ? (
@@ -372,6 +373,7 @@ export function SuggestionCard({
           onClick={onDismiss}
           disabled={isApplying}
           className="flex-1"
+          aria-label="Dismiss AI suggestion"
           data-testid="suggestion-dismiss-button"
         >
           <X className="h-4 w-4 mr-2" />

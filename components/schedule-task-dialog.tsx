@@ -412,6 +412,7 @@ export function ScheduleTaskDialog({
               onClick={handleClearSchedule}
               disabled={isScheduling}
               className="w-full sm:w-auto"
+              aria-label="Clear task schedule"
               data-testid="schedule-task-dialog-clear-btn"
             >
               Clear Schedule
@@ -422,6 +423,7 @@ export function ScheduleTaskDialog({
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isScheduling}
+            aria-label="Cancel scheduling"
             data-testid="schedule-task-dialog-cancel-btn"
           >
             Cancel
@@ -429,6 +431,7 @@ export function ScheduleTaskDialog({
           <Button
             onClick={handleSchedule}
             disabled={isScheduling}
+            aria-label={isScheduling ? 'Scheduling task' : 'Schedule task'}
             data-testid="schedule-task-dialog-schedule-btn"
           >
             {isScheduling ? 'Scheduling...' : 'Schedule'}

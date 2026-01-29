@@ -341,6 +341,7 @@ export function SettingsModal({
                   onClick={() => setShowClearConfirm(true)}
                   disabled={isSubmitting || isClearing}
                   className="w-full"
+                  aria-label="Reset and clear all data"
                   data-testid="clear-data-button"
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
@@ -367,6 +368,7 @@ export function SettingsModal({
                       size="sm"
                       onClick={() => setShowClearConfirm(false)}
                       disabled={isClearing}
+                      aria-label="Cancel clear data"
                       data-testid="clear-data-cancel"
                     >
                       Cancel
@@ -377,6 +379,7 @@ export function SettingsModal({
                       size="sm"
                       onClick={handleClearAllData}
                       disabled={isClearing}
+                      aria-label={isClearing ? 'Clearing data' : 'Confirm clear all data'}
                       data-testid="clear-data-confirm-button"
                     >
                       {isClearing ? (
@@ -411,6 +414,7 @@ export function SettingsModal({
                 onClick={handleResetToDefaults}
                 disabled={isSubmitting}
                 className="mr-auto"
+                aria-label="Reset settings to defaults"
                 data-testid="reset-defaults-button"
               >
                 <RotateCcw className="mr-2 h-4 w-4" />
@@ -422,6 +426,7 @@ export function SettingsModal({
                 variant="outline"
                 onClick={() => handleOpenChange(false)}
                 disabled={isSubmitting}
+                aria-label="Cancel settings changes"
                 data-testid="cancel-button"
               >
                 Cancel
@@ -430,6 +435,7 @@ export function SettingsModal({
               <Button
                 type="submit"
                 disabled={isSubmitting || !hasChanges}
+                aria-label={isSubmitting ? 'Saving settings' : 'Save settings changes'}
                 data-testid="save-button"
               >
                 {isSubmitting ? (
