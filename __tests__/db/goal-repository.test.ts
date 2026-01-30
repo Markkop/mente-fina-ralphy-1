@@ -432,7 +432,11 @@ describe('GoalRepository', () => {
   describe('singleton instance', () => {
     it('exports a singleton goalRepository', async () => {
       const { goalRepository } = await import('@/src/db/goal-repository')
-      expect(goalRepository).toBeInstanceOf(GoalRepository)
+      // goalRepository is a Proxy, so we check for its methods instead of instanceof
+      expect(goalRepository).toBeDefined()
+      expect(typeof goalRepository.addGoal).toBe('function')
+      expect(typeof goalRepository.getGoal).toBe('function')
+      expect(typeof goalRepository.deleteNode).toBe('function')
     })
   })
 })

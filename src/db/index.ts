@@ -112,24 +112,6 @@ export async function clearAllData(): Promise<void> {
   })
 }
 
-// Export repository (types only to avoid circular dependency)
-export { GoalRepository } from './goal-repository'
+// Export repository
+export { GoalRepository, goalRepository } from './goal-repository'
 export type { CreateGoalInput, CreateTaskInput, CreateNodeInput, TreeNode } from './goal-repository'
-
-// Lazy initialization of goalRepository to avoid circular dependency
-let _goalRepository: import('./goal-repository').GoalRepository | null = null
-
-function getGoalRepository(): import('./goal-repository').GoalRepository {
-  if (typeof window === 'undefined') {
-    throw new Error('Repository can only be accessed in the browser')
-  }
-  if (!_goalRepository) {
-    const { GoalRepository } = require('./goal-repository')
-    _goalRepository = new GoalRepository()
-  }
-  return _goalRepository!
-}
-
-// Export a getter that lazily initializes the repository
-// Note: This creates the repository immediately, but only in browser context
-export const goalRepository = typeof window !== 'undefined' ? getGoalRepository() : (null as unknown as import('./goal-repository').GoalRepository)

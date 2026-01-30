@@ -29,8 +29,12 @@ describe('GoalTreeDatabase', () => {
     })
 
     it('exports a singleton db instance', () => {
-      expect(db).toBeInstanceOf(GoalTreeDatabase)
+      // db is a Proxy, so we check for its properties instead of instanceof
+      expect(db).toBeDefined()
       expect(db.name).toBe('GoalTreeDB')
+      expect(db.goals).toBeDefined()
+      expect(db.tasks).toBeDefined()
+      expect(db.settings).toBeDefined()
     })
 
     it('has goals table defined', () => {

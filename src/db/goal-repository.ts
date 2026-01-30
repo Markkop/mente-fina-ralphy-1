@@ -405,4 +405,21 @@ export class GoalRepository {
   }
 }
 
-// Note: goalRepository singleton is exported from index.ts to avoid circular dependency
+// Singleton repository instance (lazy initialization for SSR compatibility)
+let _goalRepository: GoalRepository | null = null
+
+export const goalRepository: GoalRepository = new Proxy({} as GoalRepository, {
+  get(_target, prop) {
+    if (typeof window === 'undefined') {
+      throw new Error('Repository can only be accessed in the browser')
+    }
+    if (!_goalRepository) {
+      _goalRepository = new GoalRepository()
+    }
+    const value = _goalRepository[prop as keyof GoalRepository]
+    if (typeof value === 'function') {
+      return value.bind(_goalRepository)
+    }
+    return value
+  },
+})

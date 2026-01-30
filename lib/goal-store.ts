@@ -3,13 +3,12 @@ import {
   type Goal,
   type Task,
   type NodeStatus,
-  goalRepository,
   type CreateGoalInput,
   type CreateTaskInput,
   type TreeNode,
   GoalTreeDatabase,
 } from '@/src/db'
-import { GoalRepository } from '@/src/db/goal-repository'
+import { GoalRepository, goalRepository } from '@/src/db/goal-repository'
 
 /**
  * Hierarchical tree node with children
