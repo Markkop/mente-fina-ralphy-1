@@ -13,7 +13,9 @@ import {
   Repeat,
   Calendar,
   Trash2,
+  Loader2,
 } from 'lucide-react'
+import type { NodeOperationType } from '@/lib/ui-store'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import type { TreeNodeWithChildren } from '@/lib/goal-store'
@@ -39,6 +41,10 @@ export interface NodeItemProps {
   onDelete?: (node: TreeNodeWithChildren) => void
   /** Currently selected node id */
   selectedNodeId?: number | null
+  /** Type of pending operation on this node (if any) */
+  pendingOperation?: NodeOperationType
+  /** Map of node IDs to their pending operation types (for child nodes) */
+  pendingOperations?: Map<number, NodeOperationType>
 }
 
 /**
@@ -186,6 +192,8 @@ export function NodeItem({
   onAddChild,
   onDelete,
   selectedNodeId,
+  pendingOperation,
+  pendingOperations,
 }: NodeItemProps) {
   // Default to expanded for root level, collapsed for deeper levels
   const [isExpanded, setIsExpanded] = useState(defaultExpanded ?? depth < 2)
@@ -195,6 +203,12 @@ export function NodeItem({
   const isSelected = selectedNodeId === node.id
   const colors = getNodeColors(node.nodeType)
   const NodeIcon = NODE_ICONS[node.nodeType] ?? Target
+  
+  // Check if this node has a pending operation
+  const hasPendingOperation = pendingOperation !== undefined || 
+    (node.id !== undefined && pendingOperations?.has(node.id))
+  const currentOperation = pendingOperation ?? 
+    (node.id !== undefined ? pendingOperations?.get(node.id) : undefined)
 
   // Task-specific properties
   const isCompleted = isTask
@@ -259,13 +273,15 @@ export function NodeItem({
           colors.border,
           colors.hover,
           isSelected && 'ring-2 ring-primary ring-offset-1',
-          isCompleted && 'opacity-60'
+          isCompleted && 'opacity-60',
+          hasPendingOperation && 'opacity-70 pointer-events-none'
         )}
         style={{ marginLeft: depth * 24 }}
         onClick={handleSelect}
         role="treeitem"
         aria-expanded={hasChildren ? isExpanded : undefined}
         aria-selected={isSelected}
+        aria-busy={hasPendingOperation}
         data-testid={`node-row-${node.id}`}
       >
         {/* Expand/Collapse Button */}
@@ -354,30 +370,45 @@ export function NodeItem({
           </div>
         )}
 
-        {/* Actions (visible on hover) */}
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          {!isTask && (
+        {/* Loading indicator (when operation pending) */}
+        {hasPendingOperation && (
+          <div
+            className="flex items-center gap-1.5 text-muted-foreground"
+            data-testid={`node-loading-${node.id}`}
+          >
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <span className="text-xs">
+              {currentOperation === 'creating' ? 'Adding...' : 'Deleting...'}
+            </span>
+          </div>
+        )}
+
+        {/* Actions (visible on hover, hidden when loading) */}
+        {!hasPendingOperation && (
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            {!isTask && (
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                onClick={handleAddChild}
+                aria-label="Add child node"
+                data-testid={`add-child-button-${node.id}`}
+              >
+                <MoreHorizontal className="h-3 w-3" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon-xs"
-              onClick={handleAddChild}
-              aria-label="Add child node"
-              data-testid={`add-child-button-${node.id}`}
+              onClick={handleDelete}
+              aria-label="Delete node"
+              data-testid={`delete-button-${node.id}`}
+              className="hover:bg-red-100 dark:hover:bg-red-900/50 hover:text-red-600 dark:hover:text-red-400"
             >
-              <MoreHorizontal className="h-3 w-3" />
+              <Trash2 className="h-3 w-3" />
             </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            onClick={handleDelete}
-            aria-label="Delete node"
-            data-testid={`delete-button-${node.id}`}
-            className="hover:bg-red-100 dark:hover:bg-red-900/50 hover:text-red-600 dark:hover:text-red-400"
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Children */}
@@ -399,6 +430,7 @@ export function NodeItem({
               onAddChild={onAddChild}
               onDelete={onDelete}
               selectedNodeId={selectedNodeId}
+              pendingOperations={pendingOperations}
             />
           ))}
         </div>

@@ -293,4 +293,149 @@ describe('UI Store', () => {
       expect(store2.getState().settingsModalOpen).toBe(false)
     })
   })
+
+  describe('pending operations', () => {
+    let store: ReturnType<typeof createUIStore>
+
+    beforeEach(() => {
+      store = createUIStore()
+    })
+
+    describe('initial state', () => {
+      it('should have empty pendingOperations map by default', () => {
+        expect(store.getState().pendingOperations.size).toBe(0)
+      })
+    })
+
+    describe('startNodeOperation', () => {
+      it('should add a creating operation to a node', () => {
+        store.getState().startNodeOperation(1, 'creating')
+
+        expect(store.getState().pendingOperations.has(1)).toBe(true)
+        expect(store.getState().pendingOperations.get(1)).toBe('creating')
+      })
+
+      it('should add a deleting operation to a node', () => {
+        store.getState().startNodeOperation(2, 'deleting')
+
+        expect(store.getState().pendingOperations.has(2)).toBe(true)
+        expect(store.getState().pendingOperations.get(2)).toBe('deleting')
+      })
+
+      it('should handle multiple nodes with operations', () => {
+        store.getState().startNodeOperation(1, 'creating')
+        store.getState().startNodeOperation(2, 'deleting')
+        store.getState().startNodeOperation(3, 'creating')
+
+        expect(store.getState().pendingOperations.size).toBe(3)
+        expect(store.getState().pendingOperations.get(1)).toBe('creating')
+        expect(store.getState().pendingOperations.get(2)).toBe('deleting')
+        expect(store.getState().pendingOperations.get(3)).toBe('creating')
+      })
+
+      it('should replace existing operation type', () => {
+        store.getState().startNodeOperation(1, 'creating')
+        store.getState().startNodeOperation(1, 'deleting')
+
+        expect(store.getState().pendingOperations.get(1)).toBe('deleting')
+      })
+    })
+
+    describe('completeNodeOperation', () => {
+      it('should remove a pending operation from a node', () => {
+        store.getState().startNodeOperation(1, 'creating')
+        store.getState().completeNodeOperation(1)
+
+        expect(store.getState().pendingOperations.has(1)).toBe(false)
+      })
+
+      it('should not affect other pending operations', () => {
+        store.getState().startNodeOperation(1, 'creating')
+        store.getState().startNodeOperation(2, 'deleting')
+        store.getState().completeNodeOperation(1)
+
+        expect(store.getState().pendingOperations.has(1)).toBe(false)
+        expect(store.getState().pendingOperations.has(2)).toBe(true)
+      })
+
+      it('should handle completing non-existent operation gracefully', () => {
+        store.getState().completeNodeOperation(999)
+
+        expect(store.getState().pendingOperations.size).toBe(0)
+      })
+    })
+
+    describe('hasNodeOperation', () => {
+      it('should return true if node has a pending operation', () => {
+        store.getState().startNodeOperation(1, 'creating')
+
+        expect(store.getState().hasNodeOperation(1)).toBe(true)
+      })
+
+      it('should return false if node has no pending operation', () => {
+        expect(store.getState().hasNodeOperation(1)).toBe(false)
+      })
+
+      it('should return false after operation is completed', () => {
+        store.getState().startNodeOperation(1, 'creating')
+        store.getState().completeNodeOperation(1)
+
+        expect(store.getState().hasNodeOperation(1)).toBe(false)
+      })
+    })
+
+    describe('getNodeOperationType', () => {
+      it('should return the operation type for a node with pending operation', () => {
+        store.getState().startNodeOperation(1, 'creating')
+
+        expect(store.getState().getNodeOperationType(1)).toBe('creating')
+      })
+
+      it('should return undefined for a node without pending operation', () => {
+        expect(store.getState().getNodeOperationType(1)).toBeUndefined()
+      })
+    })
+
+    describe('clearPendingOperations', () => {
+      it('should clear all pending operations', () => {
+        store.getState().startNodeOperation(1, 'creating')
+        store.getState().startNodeOperation(2, 'deleting')
+        store.getState().startNodeOperation(3, 'creating')
+
+        store.getState().clearPendingOperations()
+
+        expect(store.getState().pendingOperations.size).toBe(0)
+      })
+    })
+
+    describe('resetUIState with pending operations', () => {
+      it('should clear pending operations when resetting UI state', () => {
+        store.getState().startNodeOperation(1, 'creating')
+        store.getState().startNodeOperation(2, 'deleting')
+        store.getState().openSettingsModal()
+
+        store.getState().resetUIState()
+
+        expect(store.getState().pendingOperations.size).toBe(0)
+        expect(store.getState().settingsModalOpen).toBe(false)
+      })
+    })
+
+    describe('pending operations isolation', () => {
+      it('should not affect pending operations when dialogs are opened', () => {
+        store.getState().startNodeOperation(1, 'creating')
+        store.getState().openAddChildDialog(createMockNode())
+
+        expect(store.getState().pendingOperations.has(1)).toBe(true)
+      })
+
+      it('should not affect pending operations when dialogs are closed', () => {
+        store.getState().startNodeOperation(1, 'creating')
+        store.getState().openAddChildDialog(createMockNode())
+        store.getState().closeAddChildDialog()
+
+        expect(store.getState().pendingOperations.has(1)).toBe(true)
+      })
+    })
+  })
 })

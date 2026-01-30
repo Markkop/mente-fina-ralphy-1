@@ -8,6 +8,7 @@ import { AddChildDialog, type AddChildDialogProps } from './add-child-dialog'
 import { DeleteConfirmationDialog, type DeleteConfirmationDialogProps } from './delete-confirmation-dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import type { TreeNodeWithChildren } from '@/lib/goal-store'
+import type { NodeOperationType } from '@/lib/ui-store'
 
 /**
  * Props for the AppLayout component
@@ -91,6 +92,26 @@ export function AppLayout({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [nodeToDelete, setNodeToDelete] = useState<TreeNodeWithChildren | null>(null)
 
+  // Pending operations state for loading indicators
+  const [pendingOperations, setPendingOperations] = useState<Map<number, NodeOperationType>>(new Map())
+
+  // Helper functions to manage pending operations
+  const startNodeOperation = useCallback((nodeId: number, operationType: NodeOperationType) => {
+    setPendingOperations(prev => {
+      const next = new Map(prev)
+      next.set(nodeId, operationType)
+      return next
+    })
+  }, [])
+
+  const completeNodeOperation = useCallback((nodeId: number) => {
+    setPendingOperations(prev => {
+      const next = new Map(prev)
+      next.delete(nodeId)
+      return next
+    })
+  }, [])
+
   const handleChatOpenChange = useCallback(
     (open: boolean) => {
       if (!isControlled) {
@@ -164,6 +185,7 @@ export function AppLayout({
                 onDelete={handleDelete}
                 selectedNodeId={selectedNodeId}
                 onCreateRootGoal={goalTreeViewProps?.onCreateRootGoal ?? handleCreateRootGoal}
+                pendingOperations={pendingOperations}
               />
             </div>
           </ScrollArea>
@@ -183,6 +205,62 @@ export function AppLayout({
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
         parentNode={selectedParentNode}
+        onAddGoal={addChildDialogProps?.onAddGoal ? async (input) => {
+          const parentId = input.parentId
+          if (parentId !== undefined) {
+            startNodeOperation(parentId, 'creating')
+          }
+          try {
+            const result = await addChildDialogProps.onAddGoal!(input)
+            return result
+          } finally {
+            if (parentId !== undefined) {
+              completeNodeOperation(parentId)
+            }
+          }
+        } : undefined}
+        onAddMilestone={addChildDialogProps?.onAddMilestone ? async (input) => {
+          const parentId = input.parentId
+          if (parentId !== undefined) {
+            startNodeOperation(parentId, 'creating')
+          }
+          try {
+            const result = await addChildDialogProps.onAddMilestone!(input)
+            return result
+          } finally {
+            if (parentId !== undefined) {
+              completeNodeOperation(parentId)
+            }
+          }
+        } : undefined}
+        onAddRequirement={addChildDialogProps?.onAddRequirement ? async (input) => {
+          const parentId = input.parentId
+          if (parentId !== undefined) {
+            startNodeOperation(parentId, 'creating')
+          }
+          try {
+            const result = await addChildDialogProps.onAddRequirement!(input)
+            return result
+          } finally {
+            if (parentId !== undefined) {
+              completeNodeOperation(parentId)
+            }
+          }
+        } : undefined}
+        onAddTask={addChildDialogProps?.onAddTask ? async (input) => {
+          const parentId = input.parentId
+          if (parentId !== undefined) {
+            startNodeOperation(parentId, 'creating')
+          }
+          try {
+            const result = await addChildDialogProps.onAddTask!(input)
+            return result
+          } finally {
+            if (parentId !== undefined) {
+              completeNodeOperation(parentId)
+            }
+          }
+        } : undefined}
       />
 
       {/* Delete Confirmation Dialog */}
@@ -191,6 +269,15 @@ export function AppLayout({
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         node={nodeToDelete}
+        onDelete={deleteConfirmationDialogProps?.onDelete ? async (id, nodeType) => {
+          startNodeOperation(id, 'deleting')
+          try {
+            const result = await deleteConfirmationDialogProps.onDelete!(id, nodeType)
+            return result
+          } finally {
+            completeNodeOperation(id)
+          }
+        } : undefined}
       />
     </div>
   )

@@ -8,10 +8,12 @@ import {
   MoreHorizontal,
   Sparkles,
   Trash2,
+  Loader2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import type { TreeNodeWithChildren } from '@/lib/goal-store'
+import type { NodeOperationType } from '@/lib/ui-store'
 import { NodeItem } from './node-item'
 import { RequirementNode } from './requirement-node'
 
@@ -35,6 +37,8 @@ export interface GoalNodeProps {
   onDelete?: (node: TreeNodeWithChildren) => void
   /** Currently selected node id */
   selectedNodeId?: number | null
+  /** Map of node IDs to their pending operation types */
+  pendingOperations?: Map<number, NodeOperationType>
 }
 
 /**
@@ -124,6 +128,7 @@ export function GoalNode({
   onAddChild,
   onDelete,
   selectedNodeId,
+  pendingOperations,
 }: GoalNodeProps) {
   // Default to expanded for root level, collapsed for deeper levels
   const [isExpanded, setIsExpanded] = useState(defaultExpanded ?? depth < 2)
@@ -131,6 +136,10 @@ export function GoalNode({
   const hasChildren = node.children.length > 0
   const isSelected = selectedNodeId === node.id
   const isRootGoal = depth === 0
+
+  // Check if this node has a pending operation
+  const hasPendingOperation = node.id !== undefined && pendingOperations?.has(node.id)
+  const currentOperation = node.id !== undefined ? pendingOperations?.get(node.id) : undefined
 
   // Progress calculation
   const progress = useMemo(() => calculateProgress(node), [node])
@@ -180,13 +189,16 @@ export function GoalNode({
           // Selected state
           isSelected && 'ring-2 ring-primary ring-offset-2 border-blue-500 dark:border-blue-400',
           // Completed state (all tasks done)
-          progress === 100 && 'border-green-300 dark:border-green-700'
+          progress === 100 && 'border-green-300 dark:border-green-700',
+          // Loading state
+          hasPendingOperation && 'opacity-70 pointer-events-none'
         )}
         style={{ marginLeft: depth * 24 }}
         onClick={handleSelect}
         role="treeitem"
         aria-expanded={hasChildren ? isExpanded : undefined}
         aria-selected={isSelected}
+        aria-busy={hasPendingOperation}
         data-testid={`goal-row-${node.id}`}
       >
         {/* Goal Header */}
@@ -264,29 +276,44 @@ export function GoalNode({
             </span>
           )}
 
-          {/* Actions (visible on hover) */}
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              onClick={handleAddChild}
-              aria-label="Add child node"
-              data-testid={`goal-add-child-button-${node.id}`}
-              className="hover:bg-blue-100 dark:hover:bg-blue-900/50"
+          {/* Loading indicator (when operation pending) */}
+          {hasPendingOperation && (
+            <div
+              className="flex items-center gap-1.5 text-muted-foreground"
+              data-testid={`goal-loading-${node.id}`}
             >
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              onClick={handleDelete}
-              aria-label="Delete goal"
-              data-testid={`goal-delete-button-${node.id}`}
-              className="hover:bg-red-100 dark:hover:bg-red-900/50 hover:text-red-600 dark:hover:text-red-400"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="text-xs">
+                {currentOperation === 'creating' ? 'Adding...' : 'Deleting...'}
+              </span>
+            </div>
+          )}
+
+          {/* Actions (visible on hover, hidden when loading) */}
+          {!hasPendingOperation && (
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                onClick={handleAddChild}
+                aria-label="Add child node"
+                data-testid={`goal-add-child-button-${node.id}`}
+                className="hover:bg-blue-100 dark:hover:bg-blue-900/50"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                onClick={handleDelete}
+                aria-label="Delete goal"
+                data-testid={`goal-delete-button-${node.id}`}
+                className="hover:bg-red-100 dark:hover:bg-red-900/50 hover:text-red-600 dark:hover:text-red-400"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Progress Bar Section */}
@@ -356,6 +383,7 @@ export function GoalNode({
                   onAddChild={onAddChild}
                   onDelete={onDelete}
                   selectedNodeId={selectedNodeId}
+                  pendingOperations={pendingOperations}
                 />
               )
             }
@@ -368,6 +396,7 @@ export function GoalNode({
                   onSelect={onSelect}
                   onDelete={onDelete}
                   selectedNodeId={selectedNodeId}
+                  pendingOperations={pendingOperations}
                 />
               )
             }
@@ -382,6 +411,7 @@ export function GoalNode({
                 onAddChild={onAddChild}
                 onDelete={onDelete}
                 selectedNodeId={selectedNodeId}
+                pendingOperations={pendingOperations}
               />
             )
           })}

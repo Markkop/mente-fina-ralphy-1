@@ -4,6 +4,21 @@ import { create } from 'zustand'
 import type { TreeNodeWithChildren } from '@/lib/goal-store'
 
 /**
+ * Type of operation being performed on a node
+ */
+export type NodeOperationType = 'creating' | 'deleting'
+
+/**
+ * Represents a pending operation on a node
+ */
+export interface PendingNodeOperation {
+  /** The node ID (or parent ID for creation operations) */
+  nodeId: number
+  /** The type of operation */
+  operationType: NodeOperationType
+}
+
+/**
  * UI Store state for managing dialogs and UI interactions
  */
 interface UIStoreState {
@@ -17,6 +32,8 @@ interface UIStoreState {
   nodeToDelete: TreeNodeWithChildren | null
   /** Whether the settings modal is open */
   settingsModalOpen: boolean
+  /** Set of node IDs with pending operations (for loading states) */
+  pendingOperations: Map<number, NodeOperationType>
 }
 
 /**
@@ -43,6 +60,16 @@ interface UIStoreActions {
   setSettingsModalOpen: (open: boolean) => void
   /** Reset all UI state */
   resetUIState: () => void
+  /** Start a pending operation on a node */
+  startNodeOperation: (nodeId: number, operationType: NodeOperationType) => void
+  /** Complete a pending operation on a node */
+  completeNodeOperation: (nodeId: number) => void
+  /** Check if a node has a pending operation */
+  hasNodeOperation: (nodeId: number) => boolean
+  /** Get the operation type for a node */
+  getNodeOperationType: (nodeId: number) => NodeOperationType | undefined
+  /** Clear all pending operations */
+  clearPendingOperations: () => void
 }
 
 type UIStore = UIStoreState & UIStoreActions
@@ -56,15 +83,18 @@ const initialState: UIStoreState = {
   deleteDialogOpen: false,
   nodeToDelete: null,
   settingsModalOpen: false,
+  pendingOperations: new Map(),
 }
 
 /**
  * Creates the UI store with optional initial state for testing
  */
 export function createUIStore(initialOverrides?: Partial<UIStoreState>) {
-  return create<UIStore>((set) => ({
+  return create<UIStore>((set, get) => ({
     // Initial state
     ...initialState,
+    // Ensure pendingOperations is always a new Map instance
+    pendingOperations: initialOverrides?.pendingOperations ?? new Map(),
     ...initialOverrides,
 
     // Actions
@@ -122,7 +152,35 @@ export function createUIStore(initialOverrides?: Partial<UIStoreState>) {
       }),
 
     resetUIState: () =>
-      set(initialState),
+      set({
+        ...initialState,
+        pendingOperations: new Map(),
+      }),
+
+    startNodeOperation: (nodeId, operationType) =>
+      set((state) => {
+        const newMap = new Map(state.pendingOperations)
+        newMap.set(nodeId, operationType)
+        return { pendingOperations: newMap }
+      }),
+
+    completeNodeOperation: (nodeId) =>
+      set((state) => {
+        const newMap = new Map(state.pendingOperations)
+        newMap.delete(nodeId)
+        return { pendingOperations: newMap }
+      }),
+
+    hasNodeOperation: (nodeId) => {
+      return get().pendingOperations.has(nodeId)
+    },
+
+    getNodeOperationType: (nodeId) => {
+      return get().pendingOperations.get(nodeId)
+    },
+
+    clearPendingOperations: () =>
+      set({ pendingOperations: new Map() }),
   }))
 }
 

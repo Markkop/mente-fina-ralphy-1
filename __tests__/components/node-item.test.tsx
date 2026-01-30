@@ -603,4 +603,100 @@ describe('NodeItem', () => {
       expect(checkbox).toHaveAttribute('aria-label', 'Mark as incomplete')
     })
   })
+
+  describe('loading states', () => {
+    it('shows loading indicator when node has pending creating operation', () => {
+      const node = createMockNode({ id: 70, title: 'Loading Node' })
+      const pendingOperations = new Map<number, 'creating' | 'deleting'>([[70, 'creating']])
+      render(<NodeItem node={node} pendingOperations={pendingOperations} />)
+
+      expect(screen.getByTestId('node-loading-70')).toBeInTheDocument()
+      expect(screen.getByTestId('node-loading-70')).toHaveTextContent('Adding...')
+    })
+
+    it('shows loading indicator when node has pending deleting operation', () => {
+      const node = createMockNode({ id: 71, title: 'Deleting Node' })
+      const pendingOperations = new Map<number, 'creating' | 'deleting'>([[71, 'deleting']])
+      render(<NodeItem node={node} pendingOperations={pendingOperations} />)
+
+      expect(screen.getByTestId('node-loading-71')).toBeInTheDocument()
+      expect(screen.getByTestId('node-loading-71')).toHaveTextContent('Deleting...')
+    })
+
+    it('applies opacity styling when node has pending operation', () => {
+      const node = createMockNode({ id: 72, title: 'Loading Node' })
+      const pendingOperations = new Map<number, 'creating' | 'deleting'>([[72, 'creating']])
+      render(<NodeItem node={node} pendingOperations={pendingOperations} />)
+
+      const row = screen.getByTestId('node-row-72')
+      expect(row).toHaveClass('opacity-70')
+      expect(row).toHaveClass('pointer-events-none')
+    })
+
+    it('has aria-busy attribute when node has pending operation', () => {
+      const node = createMockNode({ id: 73, title: 'Busy Node' })
+      const pendingOperations = new Map<number, 'creating' | 'deleting'>([[73, 'creating']])
+      render(<NodeItem node={node} pendingOperations={pendingOperations} />)
+
+      const row = screen.getByTestId('node-row-73')
+      expect(row).toHaveAttribute('aria-busy', 'true')
+    })
+
+    it('hides action buttons when node has pending operation', () => {
+      const node = createMockNode({ id: 74, title: 'Loading Node' })
+      const pendingOperations = new Map<number, 'creating' | 'deleting'>([[74, 'creating']])
+      render(<NodeItem node={node} pendingOperations={pendingOperations} onAddChild={vi.fn()} onDelete={vi.fn()} />)
+
+      expect(screen.queryByTestId('add-child-button-74')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('delete-button-74')).not.toBeInTheDocument()
+    })
+
+    it('shows action buttons when node has no pending operation', () => {
+      const node = createMockNode({ id: 75, title: 'Normal Node' })
+      render(<NodeItem node={node} onAddChild={vi.fn()} onDelete={vi.fn()} />)
+
+      expect(screen.getByTestId('add-child-button-75')).toBeInTheDocument()
+      expect(screen.getByTestId('delete-button-75')).toBeInTheDocument()
+    })
+
+    it('does not show loading indicator when node has no pending operation', () => {
+      const node = createMockNode({ id: 76, title: 'Normal Node' })
+      render(<NodeItem node={node} />)
+
+      expect(screen.queryByTestId('node-loading-76')).not.toBeInTheDocument()
+    })
+
+    it('passes pendingOperations to child nodes', () => {
+      const childNode = createMockNode({ id: 78, title: 'Child with loading' })
+      const parentNode = createMockNode({
+        id: 77,
+        title: 'Parent',
+        children: [childNode],
+      })
+      const pendingOperations = new Map<number, 'creating' | 'deleting'>([[78, 'deleting']])
+      render(<NodeItem node={parentNode} depth={0} defaultExpanded={true} pendingOperations={pendingOperations} />)
+
+      // Parent should not have loading state
+      expect(screen.queryByTestId('node-loading-77')).not.toBeInTheDocument()
+      // Child should have loading state
+      expect(screen.getByTestId('node-loading-78')).toBeInTheDocument()
+    })
+
+    it('accepts pendingOperation prop directly', () => {
+      const node = createMockNode({ id: 79, title: 'Direct Loading Node' })
+      render(<NodeItem node={node} pendingOperation="creating" />)
+
+      expect(screen.getByTestId('node-loading-79')).toBeInTheDocument()
+      expect(screen.getByTestId('node-loading-79')).toHaveTextContent('Adding...')
+    })
+
+    it('prioritizes pendingOperation prop over pendingOperations map', () => {
+      const node = createMockNode({ id: 80, title: 'Mixed Loading Node' })
+      const pendingOperations = new Map<number, 'creating' | 'deleting'>([[80, 'deleting']])
+      render(<NodeItem node={node} pendingOperation="creating" pendingOperations={pendingOperations} />)
+
+      // Should show 'Adding...' from direct prop, not 'Deleting...' from map
+      expect(screen.getByTestId('node-loading-80')).toHaveTextContent('Adding...')
+    })
+  })
 })

@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { useGoalTree } from '@/lib/hooks'
 import { GoalNode } from './goal-node'
 import type { TreeNodeWithChildren } from '@/lib/goal-store'
+import type { NodeOperationType } from '@/lib/ui-store'
 
 /**
  * Props for the GoalTreeView component
@@ -38,6 +39,8 @@ export interface GoalTreeViewProps {
   showToolbar?: boolean
   /** Initial expand state: 'default' follows depth rules, 'expanded' expands all, 'collapsed' collapses all */
   initialExpandState?: 'default' | 'expanded' | 'collapsed'
+  /** Map of node IDs to their pending operation types */
+  pendingOperations?: Map<number, NodeOperationType>
 }
 
 /**
@@ -68,6 +71,7 @@ export function GoalTreeView({
   selectedNodeId,
   showToolbar = true,
   initialExpandState = 'default',
+  pendingOperations,
 }: GoalTreeViewProps) {
   const {
     rootGoals,
@@ -324,6 +328,7 @@ export function GoalTreeView({
             onAddChild={onAddChild}
             onDelete={onDelete}
             selectedNodeId={selectedNodeId}
+            pendingOperations={pendingOperations}
           />
         ))}
       </div>
