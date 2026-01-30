@@ -31,11 +31,10 @@ function createMockGoal(overrides: Partial<TreeNodeWithChildren> = {}): TreeNode
     title: 'Test Goal',
     nodeType: 'goal',
     status: 'active',
-    type: 'goal',
     createdAt: new Date(),
     children: [],
     ...overrides,
-  }
+  } as TreeNodeWithChildren
 }
 
 function createMockTask(
@@ -45,8 +44,6 @@ function createMockTask(
     id: 100,
     title: 'Test Task',
     nodeType: 'task',
-    status: 'active',
-    type: 'task',
     createdAt: new Date(),
     children: [],
     isCompleted: false,

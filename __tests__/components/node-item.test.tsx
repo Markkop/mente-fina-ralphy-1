@@ -10,11 +10,10 @@ function createMockNode(overrides: Partial<TreeNodeWithChildren> = {}): TreeNode
     title: 'Test Node',
     nodeType: 'goal',
     status: 'active',
-    type: 'goal',
     createdAt: new Date(),
     children: [],
     ...overrides,
-  }
+  } as TreeNodeWithChildren
 }
 
 // Helper to create a mock task node
@@ -23,8 +22,6 @@ function createMockTask(overrides: Partial<TreeNodeWithChildren & { isCompleted:
     id: 100,
     title: 'Test Task',
     nodeType: 'task',
-    status: 'active',
-    type: 'task',
     createdAt: new Date(),
     children: [],
     isCompleted: false,
@@ -48,7 +45,6 @@ describe('NodeItem', () => {
         id: 2,
         title: 'My Milestone',
         nodeType: 'milestone',
-        type: 'milestone',
       })
       render(<NodeItem node={node} />)
 
@@ -60,7 +56,6 @@ describe('NodeItem', () => {
         id: 3,
         title: 'My Requirement',
         nodeType: 'requirement',
-        type: 'requirement',
       })
       render(<NodeItem node={node} />)
 
@@ -350,7 +345,6 @@ describe('NodeItem', () => {
         id: 55,
         title: 'Milestone Node',
         nodeType: 'milestone',
-        type: 'milestone',
       })
       render(<NodeItem node={node} onAddChild={vi.fn()} />)
 
@@ -368,7 +362,6 @@ describe('NodeItem', () => {
         id: 56,
         title: 'Requirement Node',
         nodeType: 'requirement',
-        type: 'requirement',
       })
       render(<NodeItem node={node} onAddChild={vi.fn()} />)
 
@@ -476,7 +469,6 @@ describe('NodeItem', () => {
         id: 35,
         title: 'Milestone',
         nodeType: 'milestone',
-        type: 'milestone',
         children: [task],
       })
       render(<NodeItem node={milestone} />)
@@ -489,7 +481,6 @@ describe('NodeItem', () => {
         id: 37,
         title: 'Requirement',
         nodeType: 'requirement',
-        type: 'requirement',
         children: [],
       })
       render(<NodeItem node={requirement} />)

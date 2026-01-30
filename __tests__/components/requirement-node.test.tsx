@@ -12,12 +12,11 @@ function createMockRequirement(
     title: 'Test Requirement',
     nodeType: 'requirement',
     status: 'active',
-    type: 'requirement',
     createdAt: new Date(),
     children: [],
     parentId: 1,
     ...overrides,
-  }
+  } as TreeNodeWithChildren
 }
 
 describe('RequirementNode', () => {

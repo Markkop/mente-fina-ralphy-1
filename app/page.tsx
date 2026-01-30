@@ -6,6 +6,7 @@ import { useState, useCallback } from 'react'
 import { Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useGoalTree } from '@/lib/hooks'
+import type { TaskFrequency } from '@/src/db'
 
 // Disable static generation since we use IndexedDB (client-side only)
 export const dynamic = 'force-dynamic'
@@ -33,6 +34,20 @@ export default function Home() {
     [deleteGoal, deleteTask]
   )
 
+  // Wrapper for addTask to match the prop type signature
+  const handleAddTask = useCallback(
+    async (input: {
+      title: string
+      description?: string
+      parentId: number
+      frequency: TaskFrequency
+      measurement?: string
+    }): Promise<number> => {
+      return addTask(input)
+    },
+    [addTask]
+  )
+
   return (
     <>
       <AppLayout
@@ -53,7 +68,7 @@ export default function Home() {
           onAddGoal: addGoal,
           onAddMilestone: addMilestone,
           onAddRequirement: addRequirement,
-          onAddTask: addTask,
+          onAddTask: handleAddTask,
         }}
         deleteConfirmationDialogProps={{
           onDelete: handleDelete,

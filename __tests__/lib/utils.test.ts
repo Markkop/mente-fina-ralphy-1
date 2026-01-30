@@ -66,8 +66,11 @@ describe('cn utility function', () => {
   })
 
   it('handles complex real-world scenario', () => {
-    const variant = 'primary'
-    const size = 'large'
+    // Test with actual conditional values that TypeScript can't optimize away
+    const getVariant = (): 'primary' | 'secondary' => 'primary'
+    const getSize = (): 'large' | 'small' => 'large'
+    const variant = getVariant()
+    const size = getSize()
     
     const result = cn(
       'base-button',

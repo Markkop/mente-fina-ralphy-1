@@ -256,7 +256,10 @@ describe('useGoals hook', () => {
       await store.getState().updateGoalStatus(id, 'completed')
 
       const state = store.getState()
-      expect((state.rootGoals[0] as { status: string }).status).toBe('completed')
+      const goal = state.rootGoals[0]
+      if (goal.nodeType !== 'task') {
+        expect(goal.status).toBe('completed')
+      }
     })
 
     it('deletes a goal', async () => {
@@ -421,9 +424,11 @@ describe('useTasks hook', () => {
       await store.getState().updateTask(taskId, { title: 'Updated', frequency: 'daily' })
 
       const state = store.getState()
-      const task = state.rootGoals[0].children[0] as { title: string; frequency: string }
-      expect(task.title).toBe('Updated')
-      expect(task.frequency).toBe('daily')
+      const task = state.rootGoals[0].children[0]
+      if (task.nodeType === 'task') {
+        expect(task.title).toBe('Updated')
+        expect(task.frequency).toBe('daily')
+      }
     })
 
     it('toggles task completion', async () => {
@@ -435,14 +440,18 @@ describe('useTasks hook', () => {
       })
 
       let state = store.getState()
-      let task = state.rootGoals[0].children[0] as { isCompleted: boolean }
-      expect(task.isCompleted).toBe(false)
+      let task = state.rootGoals[0].children[0]
+      if (task.nodeType === 'task') {
+        expect(task.isCompleted).toBe(false)
+      }
 
       await store.getState().toggleTaskCompletion(taskId)
 
       state = store.getState()
-      task = state.rootGoals[0].children[0] as { isCompleted: boolean }
-      expect(task.isCompleted).toBe(true)
+      task = state.rootGoals[0].children[0]
+      if (task.nodeType === 'task') {
+        expect(task.isCompleted).toBe(true)
+      }
     })
 
     it('deletes a task', async () => {

@@ -114,11 +114,10 @@ function createMockGoal(overrides: Partial<TreeNodeWithChildren> = {}): TreeNode
     title: 'Test Goal',
     nodeType: 'goal',
     status: 'active',
-    type: 'goal',
     createdAt: new Date(),
     children: [],
     ...overrides,
-  }
+  } as TreeNodeWithChildren
 }
 
 describe('Home Page', () => {
@@ -551,10 +550,9 @@ describe('Home Page', () => {
         title: 'Requirement to Delete',
         nodeType: 'requirement',
         status: 'active',
-        type: 'requirement',
         createdAt: new Date(),
         children: [],
-      }
+      } as TreeNodeWithChildren
       mockHookState = {
         rootGoals: [requirement],
         isLoading: false,
@@ -585,10 +583,9 @@ describe('Home Page', () => {
         title: 'Milestone to Delete',
         nodeType: 'milestone',
         status: 'active',
-        type: 'milestone',
         createdAt: new Date(),
         children: [],
-      }
+      } as TreeNodeWithChildren
       mockHookState = {
         rootGoals: [milestone],
         isLoading: false,

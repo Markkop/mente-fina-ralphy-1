@@ -112,11 +112,10 @@ function createMockParent(overrides: Partial<TreeNodeWithChildren> = {}): TreeNo
     title: 'Parent Goal',
     nodeType: 'goal',
     status: 'active',
-    type: 'goal',
     createdAt: new Date(),
     children: [],
     ...overrides,
-  }
+  } as TreeNodeWithChildren
 }
 
 function createMockTask(overrides: Partial<TaskWithMeta> = {}): TaskWithMeta {

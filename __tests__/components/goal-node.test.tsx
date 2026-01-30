@@ -10,11 +10,10 @@ function createMockGoal(overrides: Partial<TreeNodeWithChildren> = {}): TreeNode
     title: 'Test Goal',
     nodeType: 'goal',
     status: 'active',
-    type: 'goal',
     createdAt: new Date(),
     children: [],
     ...overrides,
-  }
+  } as TreeNodeWithChildren
 }
 
 // Helper to create a mock task node
@@ -23,8 +22,6 @@ function createMockTask(overrides: Partial<TreeNodeWithChildren & { isCompleted:
     id: 100,
     title: 'Test Task',
     nodeType: 'task',
-    status: 'active',
-    type: 'task',
     createdAt: new Date(),
     children: [],
     isCompleted: false,
@@ -41,11 +38,10 @@ function createMockMilestone(overrides: Partial<TreeNodeWithChildren> = {}): Tre
     title: 'Test Milestone',
     nodeType: 'milestone',
     status: 'active',
-    type: 'milestone',
     createdAt: new Date(),
     children: [],
     ...overrides,
-  }
+  } as TreeNodeWithChildren
 }
 
 // Helper to create a mock requirement node
@@ -55,11 +51,10 @@ function createMockRequirement(overrides: Partial<TreeNodeWithChildren> = {}): T
     title: 'Test Requirement',
     nodeType: 'requirement',
     status: 'active',
-    type: 'requirement',
     createdAt: new Date(),
     children: [],
     ...overrides,
-  }
+  } as TreeNodeWithChildren
 }
 
 describe('GoalNode', () => {

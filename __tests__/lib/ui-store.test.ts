@@ -9,11 +9,10 @@ function createMockNode(overrides: Partial<TreeNodeWithChildren> = {}): TreeNode
     title: 'Test Node',
     nodeType: 'goal',
     status: 'active',
-    type: 'goal',
     createdAt: new Date(),
     children: [],
     ...overrides,
-  }
+  } as TreeNodeWithChildren
 }
 
 describe('UI Store', () => {

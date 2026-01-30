@@ -10,11 +10,10 @@ function createMockNode(overrides: Partial<TreeNodeWithChildren> = {}): TreeNode
     title: 'Test Goal',
     nodeType: 'goal',
     status: 'active',
-    type: 'goal',
     createdAt: new Date(),
     children: [],
     ...overrides,
-  }
+  } as TreeNodeWithChildren
 }
 
 // Helper to create a node with children
@@ -24,39 +23,39 @@ function createMockNodeWithChildren(): TreeNodeWithChildren {
     title: 'Parent Goal',
     nodeType: 'goal',
     status: 'active',
-    type: 'goal',
     createdAt: new Date(),
     children: [
       {
         id: 2,
         title: 'Child Task 1',
         nodeType: 'task',
-        status: 'active',
-        type: 'task',
         createdAt: new Date(),
         children: [],
+        isCompleted: false,
+        frequency: 'once',
+        parentId: 1,
       },
       {
         id: 3,
         title: 'Child Goal',
         nodeType: 'goal',
         status: 'active',
-        type: 'goal',
         createdAt: new Date(),
         children: [
           {
             id: 4,
             title: 'Grandchild Task',
             nodeType: 'task',
-            status: 'active',
-            type: 'task',
             createdAt: new Date(),
             children: [],
+            isCompleted: false,
+            frequency: 'once',
+            parentId: 3,
           },
         ],
       },
     ],
-  }
+  } as TreeNodeWithChildren
 }
 
 describe('DeleteConfirmationDialog', () => {

@@ -5,18 +5,24 @@ import {
   type NodeStatus,
   type CreateGoalInput,
   type CreateTaskInput,
-  type TreeNode,
   GoalTreeDatabase,
 } from '@/src/db'
 import { GoalRepository, goalRepository } from '@/src/db/goal-repository'
 
 /**
  * Hierarchical tree node with children
+ * This is a discriminated union that properly handles both Goal and Task nodes
  */
-export interface TreeNodeWithChildren extends Omit<TreeNode, 'nodeType'> {
-  nodeType: 'goal' | 'requirement' | 'milestone' | 'task'
-  children: TreeNodeWithChildren[]
-}
+export type TreeNodeWithChildren =
+  | (Omit<Goal, 'type'> & {
+      nodeType: 'goal' | 'requirement' | 'milestone'
+      children: TreeNodeWithChildren[]
+    })
+  | (Omit<Task, 'id'> & {
+      id: number
+      nodeType: 'task'
+      children: TreeNodeWithChildren[]
+    })
 
 /**
  * Goal store state
@@ -107,12 +113,16 @@ async function buildTree(repository: GoalRepository): Promise<{
     const children = await repository.getChildren(goal.id!)
     for (const child of children) {
       if (child.nodeType === 'task') {
+        if (!child.id) {
+          continue // Skip tasks without id
+        }
         const taskNode: TreeNodeWithChildren = {
           ...child,
+          id: child.id,
           nodeType: 'task',
           children: [], // Tasks don't have children
         }
-        nodesById.set(nodeKey(child.id!, 'task'), taskNode)
+        nodesById.set(nodeKey(child.id, 'task'), taskNode)
         goalNode.children.push(taskNode)
       } else {
         // For goal/milestone/requirement, recursively build tree

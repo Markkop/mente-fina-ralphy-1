@@ -19,8 +19,6 @@ function createMockTask(
     id: 1,
     title: 'Test Task',
     nodeType: 'task',
-    status: 'active',
-    type: 'task',
     createdAt: new Date(),
     children: [],
     isCompleted: false,

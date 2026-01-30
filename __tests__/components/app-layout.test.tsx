@@ -57,11 +57,10 @@ function createMockGoal(overrides: Partial<TreeNodeWithChildren> = {}): TreeNode
     title: 'Test Goal',
     nodeType: 'goal',
     status: 'active',
-    type: 'goal',
     createdAt: new Date(),
     children: [],
     ...overrides,
-  }
+  } as TreeNodeWithChildren
 }
 
 describe('AppLayout', () => {

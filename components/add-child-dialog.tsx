@@ -97,11 +97,11 @@ export interface AddChildDialogProps {
   onAddMilestone?: (input: { title: string; description?: string; parentId?: number }) => Promise<number>
   /** Callback to add a requirement (parentId is optional for flexibility) */
   onAddRequirement?: (input: { title: string; description?: string; parentId?: number }) => Promise<number>
-  /** Callback to add a task (parentId is optional for flexibility) */
+  /** Callback to add a task (parentId is required) */
   onAddTask?: (input: {
     title: string
     description?: string
-    parentId?: number
+    parentId: number
     frequency: TaskFrequency
     measurement?: string
   }) => Promise<number>
@@ -193,8 +193,15 @@ export function AddChildDialog({
             toastSuccess(`Requirement "${title.trim()}" created`)
             break
           case 'task':
+            // Tasks always require a parentId (checked earlier in the function)
+            if (!parentNode?.id) {
+              setError('Tasks require a parent node')
+              return
+            }
             await onAddTask?.({
-              ...baseInput,
+              title: title.trim(),
+              description: description.trim() || undefined,
+              parentId: parentNode.id,
               frequency,
               measurement: measurement.trim() || undefined,
             })
