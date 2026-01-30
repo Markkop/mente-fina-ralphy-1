@@ -31,3 +31,31 @@
 - [✓] 2026-01-29 22:21 - Implement the `SettingsModal` to configure Work/Sleep hours
 - [✓] 2026-01-29 22:24 - Add a "Reset/Clear Data" button in settings for debugging
 - [✓] 2026-01-29 22:28 - Verify mobile responsiveness (stack views instead of split screen on small devices)
+- [✓] 2026-01-29 22:51 - Modify `AddChildDialog` to accept optional `parentNode` (null = root goal)
+- [✓] 2026-01-29 22:52 - Update dialog title: "Create New Goal" when `parentNode` is null
+- [✓] 2026-01-29 22:54 - Restrict type selection to "Goal" only when creating at root level
+- [✓] 2026-01-29 22:57 - Update callback signatures to support optional `parentId`
+- [✓] 2026-01-29 23:04 - Add tests for new dialog behavior
+- [✓] 2026-01-29 23:06 - Add "New Goal" button to `GoalTreeView` toolbar
+- [✓] 2026-01-29 23:09 - Add `onCreateRootGoal` callback prop to `GoalTreeView`
+- [✓] 2026-01-29 23:12 - Update empty state with "Create Your First Goal" button
+- [✓] 2026-01-29 23:15 - Style buttons consistently with existing toolbar
+- [✓] 2026-01-29 23:16 - Verify "Add Child" button visibility on `GoalNode` hover
+- [✓] 2026-01-29 23:18 - Verify "Add Child" button visibility on `NodeItem` hover
+- [✓] 2026-01-29 23:23 - Add "Delete" button to node hover state
+- [✓] 2026-01-29 23:27 - Ensure buttons are accessible (keyboard navigation, ARIA labels)
+- [✓] 2026-01-29 23:29 - Create `DeleteConfirmationDialog` component
+- [✓] 2026-01-29 23:30 - Show node title and child count in confirmation
+- [✓] 2026-01-29 23:33 - Wire delete confirmation to node delete buttons
+- [✓] 2026-01-29 23:35 - Add cascade delete warning message
+- [✓] 2026-01-29 23:38 - Import `AddChildDialog` and `DeleteConfirmationDialog` in `app/page.tsx`
+- [✓] 2026-01-29 23:40 - Add state for dialog open/close and selected parent node
+- [✓] 2026-01-29 23:44 - Wire `onAddChild` callback from `AppLayout` to open dialog
+- [✓] 2026-01-29 23:47 - Wire `onDelete` callback from `AppLayout` to open confirmation
+- [✓] 2026-01-29 23:49 - Wire `onCreateRootGoal` to open dialog with null parent
+- [✓] 2026-01-29 23:54 - Connect dialog submissions to `useGoalTree` methods
+- [✓] 2026-01-30 00:02 - Add loading states during node creation/deletion
+- [✓] 2026-01-30 00:06 - Add success feedback (toast or visual confirmation)
+- [✓] 2026-01-30 00:09 - Test keyboard navigation through dialogs
+- [✓] 2026-01-30 00:13 - Verify mobile responsiveness of new buttons
+- [✓] 2026-01-30 00:15 - Update any relevant tests
