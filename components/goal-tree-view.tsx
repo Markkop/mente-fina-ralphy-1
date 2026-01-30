@@ -11,6 +11,7 @@ import {
   Plus,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { toastSuccess, toastError } from '@/lib/toast-store'
 import { Button } from '@/components/ui/button'
 import { useGoalTree } from '@/lib/hooks'
 import { GoalNode } from './goal-node'
@@ -130,9 +131,11 @@ export function GoalTreeView({
   const handleToggleTask = useCallback(
     async (id: number) => {
       try {
-        await toggleTaskCompletion(id)
+        const isNowCompleted = await toggleTaskCompletion(id)
+        toastSuccess(isNowCompleted ? 'Task completed' : 'Task marked incomplete')
       } catch (error) {
         console.error('Failed to toggle task:', error)
+        toastError('Failed to update task')
       }
     },
     [toggleTaskCompletion]

@@ -15,6 +15,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { useSettingsStore, DEFAULT_SETTINGS } from '@/lib/settings-store'
+import { toastSuccess, toastError } from '@/lib/toast-store'
 import { useGoalStore } from '@/lib/goal-store'
 
 /**
@@ -158,9 +159,12 @@ export function SettingsModal({
           sleepStart,
           sleepEnd,
         })
+        toastSuccess('Settings saved')
         handleOpenChange(false)
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to save settings')
+        const errorMessage = err instanceof Error ? err.message : 'Failed to save settings'
+        setError(errorMessage)
+        toastError(errorMessage)
       } finally {
         setIsSubmitting(false)
       }

@@ -9,6 +9,7 @@ import {
   Loader2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { toastSuccess, toastError } from '@/lib/toast-store'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -181,12 +182,15 @@ export function AddChildDialog({
         switch (selectedType) {
           case 'goal':
             await onAddGoal?.(baseInput)
+            toastSuccess(`Goal "${title.trim()}" created`)
             break
           case 'milestone':
             await onAddMilestone?.(baseInput)
+            toastSuccess(`Milestone "${title.trim()}" created`)
             break
           case 'requirement':
             await onAddRequirement?.(baseInput)
+            toastSuccess(`Requirement "${title.trim()}" created`)
             break
           case 'task':
             await onAddTask?.({
@@ -194,12 +198,15 @@ export function AddChildDialog({
               frequency,
               measurement: measurement.trim() || undefined,
             })
+            toastSuccess(`Task "${title.trim()}" created`)
             break
         }
 
         onOpenChange(false)
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to add item')
+        const errorMessage = err instanceof Error ? err.message : 'Failed to add item'
+        setError(errorMessage)
+        toastError(errorMessage)
       } finally {
         setIsSubmitting(false)
       }

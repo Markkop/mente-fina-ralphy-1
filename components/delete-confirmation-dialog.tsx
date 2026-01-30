@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { AlertTriangle, Loader2 } from 'lucide-react'
+import { toastSuccess, toastError } from '@/lib/toast-store'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -138,10 +139,18 @@ export function DeleteConfirmationDialog({
     try {
       // Determine the database node type (goal or task)
       const dbNodeType = node.nodeType === 'task' ? 'task' : 'goal'
-      await onDelete?.(node.id, dbNodeType)
+      const deletedCount = await onDelete?.(node.id, dbNodeType)
+      const nodeTitle = node.title || 'Item'
+      if (deletedCount && deletedCount > 1) {
+        toastSuccess(`"${nodeTitle}" and ${deletedCount - 1} nested ${deletedCount - 1 === 1 ? 'item' : 'items'} deleted`)
+      } else {
+        toastSuccess(`"${nodeTitle}" deleted`)
+      }
       onOpenChange(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete item')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete item'
+      setError(errorMessage)
+      toastError(errorMessage)
     } finally {
       setIsDeleting(false)
     }
