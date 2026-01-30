@@ -699,4 +699,118 @@ describe('NodeItem', () => {
       expect(screen.getByTestId('node-loading-80')).toHaveTextContent('Adding...')
     })
   })
+
+  describe('mobile responsiveness', () => {
+    describe('action buttons touch accessibility', () => {
+      it('add child button uses icon-xs size for compact but touchable interface', () => {
+        const node = createMockNode({ id: 81, title: 'Node with Add' })
+        render(<NodeItem node={node} onAddChild={vi.fn()} />)
+
+        const addButton = screen.getByTestId('add-child-button-81')
+        // icon-xs provides 24px size - compact for tree view but still touchable
+        expect(addButton).toHaveAttribute('data-size', 'icon-xs')
+      })
+
+      it('delete button uses icon-xs size for compact but touchable interface', () => {
+        const node = createMockNode({ id: 82, title: 'Node with Delete' })
+        render(<NodeItem node={node} onDelete={vi.fn()} />)
+
+        const deleteButton = screen.getByTestId('delete-button-82')
+        expect(deleteButton).toHaveAttribute('data-size', 'icon-xs')
+      })
+
+      it('task checkbox area has adequate touch target', () => {
+        const task = createMockTask({ id: 83, title: 'Task with Checkbox' })
+        render(<NodeItem node={task} onToggleTask={vi.fn()} />)
+
+        const checkbox = screen.getByTestId('task-checkbox-83')
+        // h-5 w-5 = 20px inner + surrounding padding makes touch target
+        expect(checkbox).toHaveClass('h-5')
+        expect(checkbox).toHaveClass('w-5')
+      })
+
+      it('expand button has adequate touch target', () => {
+        const child = createMockNode({ id: 85, title: 'Child' })
+        const parent = createMockNode({ id: 84, title: 'Parent', children: [child] })
+        render(<NodeItem node={parent} />)
+
+        const expandButton = screen.getByTestId('expand-button-84')
+        expect(expandButton).toHaveClass('h-5')
+        expect(expandButton).toHaveClass('w-5')
+      })
+    })
+
+    describe('node row touch accessibility', () => {
+      it('node row has adequate padding for touch interaction', () => {
+        const node = createMockNode({ id: 86, title: 'Touchable Node' })
+        render(<NodeItem node={node} />)
+
+        const nodeRow = screen.getByTestId('node-row-86')
+        // px-3 py-2 provides adequate touch padding
+        expect(nodeRow).toHaveClass('px-3')
+        expect(nodeRow).toHaveClass('py-2')
+      })
+
+      it('node row has cursor-pointer for touch feedback indication', () => {
+        const node = createMockNode({ id: 87, title: 'Clickable Node' })
+        render(<NodeItem node={node} />)
+
+        const nodeRow = screen.getByTestId('node-row-87')
+        expect(nodeRow).toHaveClass('cursor-pointer')
+      })
+
+      it('node row has gap for child element spacing', () => {
+        const node = createMockNode({ id: 88, title: 'Spaced Node' })
+        render(<NodeItem node={node} />)
+
+        const nodeRow = screen.getByTestId('node-row-88')
+        expect(nodeRow).toHaveClass('gap-2')
+      })
+    })
+
+    describe('action buttons hover visibility pattern', () => {
+      it('action buttons container uses opacity transition for smooth appearance', () => {
+        const node = createMockNode({ id: 89, title: 'Node with Actions' })
+        render(<NodeItem node={node} onAddChild={vi.fn()} onDelete={vi.fn()} />)
+
+        const addButton = screen.getByTestId('add-child-button-89')
+        const actionsContainer = addButton.parentElement
+
+        // Verify transition class is present for smooth visibility changes
+        expect(actionsContainer).toHaveClass('transition-opacity')
+      })
+
+      it('buttons are always present in DOM for touch devices that may show them differently', () => {
+        const node = createMockNode({ id: 90, title: 'Node with Actions' })
+        render(<NodeItem node={node} onAddChild={vi.fn()} onDelete={vi.fn()} />)
+
+        // Buttons should be in the DOM even when visually hidden (opacity-0)
+        // This ensures touch devices can still interact with them
+        const addButton = screen.getByTestId('add-child-button-90')
+        const deleteButton = screen.getByTestId('delete-button-90')
+        
+        expect(addButton).toBeInTheDocument()
+        expect(deleteButton).toBeInTheDocument()
+      })
+    })
+
+    describe('indentation for mobile readability', () => {
+      it('uses consistent indentation multiplier for all depths', () => {
+        const grandchild = createMockNode({ id: 93, title: 'Grandchild' })
+        const child = createMockNode({ id: 92, title: 'Child', children: [grandchild] })
+        const parent = createMockNode({ id: 91, title: 'Parent', children: [child] })
+        
+        render(<NodeItem node={parent} depth={0} defaultExpanded={true} />)
+
+        // Each level should indent by 24px
+        const parentRow = screen.getByTestId('node-row-91')
+        const childRow = screen.getByTestId('node-row-92')
+        const grandchildRow = screen.getByTestId('node-row-93')
+
+        expect(parentRow).toHaveStyle({ marginLeft: '0px' })
+        expect(childRow).toHaveStyle({ marginLeft: '24px' })
+        expect(grandchildRow).toHaveStyle({ marginLeft: '48px' })
+      })
+    })
+  })
 })

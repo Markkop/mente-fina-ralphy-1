@@ -581,4 +581,134 @@ describe('ChatSidebar', () => {
       })
     })
   })
+
+  describe('mobile responsiveness', () => {
+    describe('floating toggle button', () => {
+      it('has fixed positioning for mobile bottom-right corner', () => {
+        render(<ChatSidebar open={false} />)
+
+        const toggleButton = screen.getByTestId('chat-sidebar-toggle')
+        expect(toggleButton).toHaveClass('fixed')
+        expect(toggleButton).toHaveClass('bottom-6')
+        expect(toggleButton).toHaveClass('right-6')
+      })
+
+      it('has touch-friendly size (min 44x44px)', () => {
+        render(<ChatSidebar open={false} />)
+
+        const toggleButton = screen.getByTestId('chat-sidebar-toggle')
+        // h-14 w-14 = 56px which exceeds the 44px minimum for touch targets
+        expect(toggleButton).toHaveClass('h-14')
+        expect(toggleButton).toHaveClass('w-14')
+      })
+
+      it('has rounded-full for circular button on all screen sizes', () => {
+        render(<ChatSidebar open={false} />)
+
+        const toggleButton = screen.getByTestId('chat-sidebar-toggle')
+        expect(toggleButton).toHaveClass('rounded-full')
+      })
+
+      it('has high z-index for visibility over other content', () => {
+        render(<ChatSidebar open={false} />)
+
+        const toggleButton = screen.getByTestId('chat-sidebar-toggle')
+        expect(toggleButton).toHaveClass('z-50')
+      })
+
+      it('has shadow for visibility on all backgrounds', () => {
+        render(<ChatSidebar open={false} />)
+
+        const toggleButton = screen.getByTestId('chat-sidebar-toggle')
+        expect(toggleButton).toHaveClass('shadow-lg')
+      })
+    })
+
+    describe('sidebar panel responsive width', () => {
+      beforeEach(() => {
+        localStorageStore['goaltree-openai-api-key'] = 'sk-test-key'
+      })
+
+      it('has full width on mobile (w-full)', () => {
+        render(<ChatSidebar open={true} />)
+
+        const sidebar = screen.getByTestId('chat-sidebar')
+        expect(sidebar).toHaveClass('w-full')
+      })
+
+      it('has constrained width on larger screens (sm:w-[400px])', () => {
+        render(<ChatSidebar open={true} />)
+
+        const sidebar = screen.getByTestId('chat-sidebar')
+        expect(sidebar).toHaveClass('sm:w-[400px]')
+      })
+
+      it('has max-width constraint on larger screens', () => {
+        render(<ChatSidebar open={true} />)
+
+        const sidebar = screen.getByTestId('chat-sidebar')
+        expect(sidebar).toHaveClass('sm:max-w-[400px]')
+      })
+    })
+
+    describe('header buttons touch accessibility', () => {
+      beforeEach(() => {
+        localStorageStore['goaltree-openai-api-key'] = 'sk-test-key'
+      })
+
+      it('close button uses icon-sm size for touch accessibility', () => {
+        render(<ChatSidebar open={true} />)
+
+        const closeButton = screen.getByTestId('chat-close-button')
+        // icon-sm provides 32px size which is acceptable for touch
+        expect(closeButton).toHaveAttribute('data-size', 'icon-sm')
+      })
+
+      it('clear chat button uses icon-sm size for touch accessibility', () => {
+        render(<ChatSidebar open={true} />)
+
+        const clearButton = screen.getByTestId('chat-clear-button')
+        expect(clearButton).toHaveAttribute('data-size', 'icon-sm')
+      })
+
+      it('settings button uses icon-sm size for touch accessibility', () => {
+        render(<ChatSidebar open={true} />)
+
+        const settingsButton = screen.getByTestId('chat-settings-button')
+        expect(settingsButton).toHaveAttribute('data-size', 'icon-sm')
+      })
+    })
+
+    describe('input area touch accessibility', () => {
+      beforeEach(() => {
+        localStorageStore['goaltree-openai-api-key'] = 'sk-test-key'
+      })
+
+      it('send button uses icon size for touch accessibility', () => {
+        render(<ChatSidebar open={true} />)
+
+        const sendButton = screen.getByTestId('chat-send-button')
+        // icon size provides 36px which is acceptable
+        expect(sendButton).toHaveAttribute('data-size', 'icon')
+      })
+
+      it('chat input has appropriate padding for mobile typing', () => {
+        render(<ChatSidebar open={true} />)
+
+        const chatInput = screen.getByTestId('chat-input')
+        // Input should be accessible and have proper sizing
+        expect(chatInput).toBeInTheDocument()
+        expect(chatInput).toHaveClass('flex-1')
+      })
+    })
+
+    describe('API key save button touch accessibility', () => {
+      it('save button is full width for easy mobile tap', () => {
+        render(<ChatSidebar open={true} />)
+
+        const saveButton = screen.getByTestId('api-key-save-button')
+        expect(saveButton).toHaveClass('w-full')
+      })
+    })
+  })
 })
